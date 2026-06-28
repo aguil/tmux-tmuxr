@@ -1,7 +1,7 @@
 # tmux-tmuxr — agent instructions
 
-Bash TPM plugin shell for [workctl](../workctl). Sets hooks, keybindings, and
-delegates to `workctl` / `workctld` binaries.
+Bash TPM plugin shell for [work](../work). Sets hooks, keybindings, and
+delegates to `work` / `workd` binaries.
 
 ## Layout
 
@@ -10,11 +10,11 @@ delegates to `workctl` / `workctld` binaries.
 
 ## Development
 
-Plugin resolves workctl from `../workctl/dist/` relative to this directory.
-After changing workctl, rebuild:
+Plugin resolves work from `../work/dist/` relative to this directory.
+After changing work, rebuild:
 
 ```bash
-cd ../workctl && npm run build
+cd ../work && npm run build
 tmux source-file ~/.tmux.conf
 ```
 
@@ -37,5 +37,5 @@ Jujutsu colocated with git. Use `jj` only — no `git commit` / `git rebase`.
 ## Conventions
 
 - Hooks use `run-shell -b` and `-ga` (append, non-blocking)
-- Sidebar panes marked with `@workctl-sidebar 1`
+- Sidebar panes marked with `-sidebar 1`
 - Uppercase `W` / `S` bindings (lowercase `w` is tmux choose-tree)

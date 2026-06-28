@@ -1,12 +1,12 @@
 # tmux-tmuxr
 
-TPM plugin for [workctl](../workctl). Sets tmux hooks, keybindings, and status
-line integration; starts `workctld` and manages sidebar panes.
+TPM plugin for [work](../work). Sets tmux hooks, keybindings, and status
+line integration; starts `workd` and manages sidebar panes.
 
 ## Requirements
 
 - tmux 3.x (3.5+ for `pane-title-changed` hook)
-- Built [workctl](../workctl) checkout as a sibling directory (`../workctl/dist/`)
+- Built [work](../work) checkout as a sibling directory (`../work/dist/`)
 - `fzf` (for the optional new-window repo picker)
 
 ## Install
@@ -19,10 +19,10 @@ This repo is loaded from `~/.tmux.conf` via:
 run "bash ~/dev/projects/tmuxr/tmux-tmuxr/tmux-tmuxr.tmux"
 ```
 
-Build workctl first:
+Build work first:
 
 ```bash
-cd ~/dev/projects/tmuxr/workctl && npm run build
+cd ~/dev/projects/tmuxr/work && npm run build
 ```
 
 Reload tmux: `prefix + r`
@@ -44,7 +44,7 @@ set -g @plugin "github-user/tmux-tmuxr"
 
 Reactive hooks (background `run-shell -b` unless noted):
 
-- `after-split-window` — scan the new pane only (`workctl scan --pane`)
+- `after-split-window` — scan the new pane only (`work scan --pane`)
 - `after-new-window` — scan new pane, optional repo picker, ensure sidebar
 - `pane-exited` — mark agent detached
 - `session-closed` — archive workspace
@@ -59,9 +59,9 @@ repo from `repo-scan-dir`, create a project checkout, associate a tree, and cd
 the new window:
 
 ```bash
-workctl config set repo-scan-dir ~/dev/repos[,~/other/repos]
-workctl config set checkout-base ~/dev/projects/tmuxr   # optional
-workctl config set prompt-repos-on-new-window true
+work config set repo-scan-dir ~/dev/repos[,~/other/repos]
+work config set checkout-base ~/dev/projects/tmuxr   # optional
+work config set prompt-repos-on-new-window true
 ```
 
 Reload tmux after plugin update: `prefix + r`.
@@ -74,10 +74,10 @@ after tmux-resurrect restore.
 
 ## Status line
 
-workctl agent counts are prepended to `status-right` via
+work agent counts are prepended to `status-right` via
 `scripts/append-status.sh` (configured in chezmoi `dot_tmux.conf.tmpl`).
 
 ## Related
 
-- CLI repo: [workctl](../workctl)
+- CLI repo: [work](../work)
 - Meta-project: `~/dev/projects/tmuxr/`

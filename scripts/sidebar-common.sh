@@ -5,21 +5,21 @@ sidebar_common_dir() {
   cd "$(dirname "${BASH_SOURCE[1]:-${BASH_SOURCE[0]}}")" && pwd
 }
 
-workctl_session_tracked() {
+work_session_tracked() {
   local session="$1"
-  tmux show-option -t "$session" -v @workctl-workspace &>/dev/null
+  tmux show-option -t "$session" -v @work-workspace &>/dev/null
 }
 
-workctl_sidebar_visible() {
+work_sidebar_visible() {
   local session="$1"
   local disabled visible
 
-  disabled=$(tmux show-option -t "$session" -qv @workctl-sidebar-disabled 2>/dev/null || echo "")
+  disabled=$(tmux show-option -t "$session" -qv @work-sidebar-disabled 2>/dev/null || echo "")
   if [[ "$disabled" == "1" ]]; then
     return 1
   fi
 
-  visible=$(tmux show-option -t "$session" -qv @workctl-sidebar-visible 2>/dev/null || echo "")
+  visible=$(tmux show-option -t "$session" -qv @work-sidebar-visible 2>/dev/null || echo "")
   if [[ "$visible" == "0" ]]; then
     return 1
   fi
@@ -27,20 +27,20 @@ workctl_sidebar_visible() {
   return 0
 }
 
-workctl_set_sidebar_visible() {
+work_set_sidebar_visible() {
   local session="$1"
   local visible="$2"
 
   if [[ "$visible" == "1" ]]; then
-    tmux set-option -t "$session" -u @workctl-sidebar-disabled 2>/dev/null || true
-    tmux set-option -t "$session" @workctl-sidebar-visible 1
+    tmux set-option -t "$session" -u @work-sidebar-disabled 2>/dev/null || true
+    tmux set-option -t "$session" @work-sidebar-visible 1
   else
-    tmux set-option -t "$session" @workctl-sidebar-visible 0
-    tmux set-option -t "$session" @workctl-sidebar-disabled 1
+    tmux set-option -t "$session" @work-sidebar-visible 0
+    tmux set-option -t "$session" @work-sidebar-disabled 1
   fi
 }
 
-workctl_kill_session_sidebars() {
+work_kill_session_sidebars() {
   local session="$1"
   local pane_id
 
@@ -48,26 +48,26 @@ workctl_kill_session_sidebars() {
     [[ -z "$pane_id" ]] && continue
     tmux kill-pane -t "$pane_id" 2>/dev/null || true
   done < <(
-    tmux list-panes -t "$session" -F '#{pane_id}	#{@workctl-sidebar}' 2>/dev/null |
+    tmux list-panes -t "$session" -F '#{pane_id}	#{@work-sidebar}' 2>/dev/null |
       awk -F'\t' '$2 == "1" { print $1 }'
   )
 }
 
-workctl_repair_session_sidebars() {
+work_repair_session_sidebars() {
   local session="$1"
-  local workctl_bin pane_id dead marked
+  local work_bin pane_id dead marked
 
-  if ! workctl_session_tracked "$session"; then
+  if ! work_session_tracked "$session"; then
     return 0
   fi
 
-  workctl_bin=$(tmux show-environment -g WORKCTL_BIN 2>/dev/null | cut -d= -f2- || true)
-  if [[ -z "$workctl_bin" ]]; then
+  work_bin=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+  if [[ -z "$work_bin" ]]; then
     return 0
   fi
 
-  if ! workctl_sidebar_visible "$session"; then
-    workctl_kill_session_sidebars "$session"
+  if ! work_sidebar_visible "$session"; then
+    work_kill_session_sidebars "$session"
     return 0
   fi
 
@@ -76,11 +76,11 @@ workctl_repair_session_sidebars() {
       continue
     fi
     if [[ "$marked" == "1" || "$cmd" == *sidebar* ]]; then
-      tmux respawn-pane -k -t "$pane_id" "${workctl_bin} sidebar" 2>/dev/null ||
+      tmux respawn-pane -k -t "$pane_id" "${work_bin} sidebar" 2>/dev/null ||
         tmux kill-pane -t "$pane_id" 2>/dev/null || true
     fi
   done < <(
-    tmux list-panes -t "$session" -F '#{pane_id}	#{pane_dead}	#{@workctl-sidebar}	#{pane_current_command}' 2>/dev/null || true
+    tmux list-panes -t "$session" -F '#{pane_id}	#{pane_dead}	#{@work-sidebar}	#{pane_current_command}' 2>/dev/null || true
   )
 
   local window_target
@@ -92,15 +92,15 @@ workctl_repair_session_sidebars() {
   )
 }
 
-workctl_ensure_session_sidebars() {
+work_ensure_session_sidebars() {
   local session="$1"
   local window_target
 
-  if ! workctl_session_tracked "$session"; then
+  if ! work_session_tracked "$session"; then
     return 0
   fi
 
-  if ! workctl_sidebar_visible "$session"; then
+  if ! work_sidebar_visible "$session"; then
     return 0
   fi
 

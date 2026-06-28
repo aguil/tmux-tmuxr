@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prepend workctl agent counts to status-right (idempotent).
+# Prepend work agent counts to status-right (idempotent).
 # Called from ~/.tmux.conf after TPM/theme plugins load.
 
 set -euo pipefail

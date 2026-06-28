@@ -11,12 +11,12 @@ if [[ -z "$SESSION" ]]; then
 fi
 
 SCRIPTS_DIR="${TMUXR_SCRIPTS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-WORKCTL_BIN=$(tmux show-environment -g WORKCTL_BIN 2>/dev/null | cut -d= -f2- || true)
-if [[ -n "$WORKCTL_BIN" ]]; then
+WORK_BIN=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+if [[ -n "$WORK_BIN" ]]; then
   if [[ -n "$PANE" ]]; then
-    ($WORKCTL_BIN scan --pane "$PANE" --quiet 2>/dev/null || true) &
+    ($WORK_BIN scan --pane "$PANE" --quiet 2>/dev/null || true) &
   else
-    ($WORKCTL_BIN scan --session "$SESSION" --quiet 2>/dev/null || true) &
+    ($WORK_BIN scan --session "$SESSION" --quiet 2>/dev/null || true) &
   fi
 fi
 

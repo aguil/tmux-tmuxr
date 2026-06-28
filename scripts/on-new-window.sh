@@ -11,22 +11,22 @@ if [[ -z "$SESSION" || -z "$WINDOW" ]]; then
 fi
 
 SCRIPTS_DIR="${TMUXR_SCRIPTS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-WORKCTL_BIN=$(tmux show-environment -g WORKCTL_BIN 2>/dev/null | cut -d= -f2- || true)
-if [[ -z "$WORKCTL_BIN" ]]; then
+WORK_BIN=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+if [[ -z "$WORK_BIN" ]]; then
   exit 0
 fi
 
-PROMPT=$($WORKCTL_BIN config get prompt-repos-on-new-window 2>/dev/null || echo "false")
+PROMPT=$($WORK_BIN config get prompt-repos-on-new-window 2>/dev/null || echo "false")
 if [[ "$PROMPT" != "true" ]]; then
   exit 0
 fi
 
-SCAN_DIRS=$($WORKCTL_BIN config get repo-scan-dir 2>/dev/null || echo "")
+SCAN_DIRS=$($WORK_BIN config get repo-scan-dir 2>/dev/null || echo "")
 if [[ -z "$SCAN_DIRS" ]]; then
   exit 0
 fi
 
-if ! $WORKCTL_BIN session is-tracked "$SESSION" --quiet 2>/dev/null; then
+if ! $WORK_BIN session is-tracked "$SESSION" --quiet 2>/dev/null; then
   exit 0
 fi
 
@@ -48,14 +48,14 @@ if [[ -z "$ACTIVE_PANE" ]]; then
   exit 0
 fi
 
-SIDEBAR=$(tmux show-option -p -t "$ACTIVE_PANE" -v @workctl-sidebar 2>/dev/null || echo "")
+SIDEBAR=$(tmux show-option -p -t "$ACTIVE_PANE" -v @work-sidebar 2>/dev/null || echo "")
 if [[ "$SIDEBAR" == "1" ]]; then
   exit 0
 fi
 
-REPO_COUNT=$($WORKCTL_BIN repos --format names 2>/dev/null | grep -c . || true)
+REPO_COUNT=$($WORK_BIN repos --format names 2>/dev/null | grep -c . || true)
 if [[ "$REPO_COUNT" -eq 0 ]]; then
-  tmux display-message -d 4000 "workctl: no repos in repo-scan-dir"
+  tmux display-message -d 4000 "work: no repos in repo-scan-dir"
   exit 0
 fi
 

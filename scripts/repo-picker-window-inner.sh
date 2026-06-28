@@ -10,13 +10,13 @@ if [[ -z "$SESSION" || -z "$WINDOW" ]]; then
 fi
 
 SCRIPTS_DIR="${TMUXR_SCRIPTS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-WORKCTL_BIN=$(tmux show-environment -g WORKCTL_BIN 2>/dev/null | cut -d= -f2- || true)
-if [[ -z "$WORKCTL_BIN" ]]; then
+WORK_BIN=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+if [[ -z "$WORK_BIN" ]]; then
   exit 1
 fi
 
 if ! command -v fzf >/dev/null 2>&1; then
-  tmux display-message -d 4000 "workctl: fzf is required for the repo picker"
+  tmux display-message -d 4000 "work: fzf is required for the repo picker"
   exit 1
 fi
 
@@ -28,7 +28,7 @@ FZF_OPTS=(
 )
 
 selected=$(
-  $WORKCTL_BIN repos --format tsv 2>/dev/null |
+  $WORK_BIN repos --format tsv 2>/dev/null |
     bash "$SCRIPTS_DIR/fzf-tmuxr.sh" "${FZF_OPTS[@]}" || true
 )
 
@@ -37,7 +37,7 @@ if [[ -z "$selected" ]]; then
 fi
 
 path="${selected%%$'\t'*}"
-if $WORKCTL_BIN window use-repo "$path" --session "$SESSION" --window "$WINDOW" --quiet; then
+if $WORK_BIN window use-repo "$path" --session "$SESSION" --window "$WINDOW" --quiet; then
   name=$(basename "$path")
-  tmux display-message -d 3000 "workctl: $name → $path"
+  tmux display-message -d 3000 "work: $name → $path"
 fi
