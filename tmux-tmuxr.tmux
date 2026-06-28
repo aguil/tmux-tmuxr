@@ -44,7 +44,7 @@ fi
 
 # Agent auto-detection on new panes/windows
 tmux set-hook -ga after-split-window \
-    "run-shell -b '$WORKCTL scan --session #{session_name} --quiet 2>/dev/null || true'"
+    "run-shell -b '$WORKCTL scan --pane #{pane_id} --quiet 2>/dev/null || true'"
 
 # Scan + optional repo picker (replace on each plugin load to avoid duplicate hooks)
 tmux set-hook -g after-new-window \

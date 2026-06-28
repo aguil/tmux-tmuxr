@@ -13,7 +13,11 @@ fi
 SCRIPTS_DIR="${TMUXR_SCRIPTS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 WORKCTL_BIN=$(tmux show-environment -g WORKCTL_BIN 2>/dev/null | cut -d= -f2- || true)
 if [[ -n "$WORKCTL_BIN" ]]; then
-  ($WORKCTL_BIN scan --session "$SESSION" --quiet 2>/dev/null || true) &
+  if [[ -n "$PANE" ]]; then
+    ($WORKCTL_BIN scan --pane "$PANE" --quiet 2>/dev/null || true) &
+  else
+    ($WORKCTL_BIN scan --session "$SESSION" --quiet 2>/dev/null || true) &
+  fi
 fi
 
 bash "$SCRIPTS_DIR/on-new-window.sh" "$SESSION" "$WINDOW" "$PANE"
