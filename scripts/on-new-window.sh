@@ -21,8 +21,8 @@ if [[ "$PROMPT" != "true" ]]; then
   exit 0
 fi
 
-SCAN_DIR=$($WORKCTL_BIN config get repo-scan-dir 2>/dev/null || echo "null")
-if [[ -z "$SCAN_DIR" || "$SCAN_DIR" == "null" ]]; then
+SCAN_DIRS=$($WORKCTL_BIN config get repo-scan-dir 2>/dev/null || echo "")
+if [[ -z "$SCAN_DIRS" ]]; then
   exit 0
 fi
 
