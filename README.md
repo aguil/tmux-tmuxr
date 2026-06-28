@@ -47,7 +47,15 @@ Reactive hooks (all `run-shell -b`, append with `-ga`):
 - `pane-exited` — mark agent detached
 - `session-closed` — archive workspace
 - `pane-title-changed` — feed title changes (tmux 3.5+)
-- `client-attached` — reconcile after restore
+- `client-attached` — reconcile after restore; opt-in action picker on first attach
+- `session-created` — opt-in auto-track (when `auto-track` config is true)
+
+## Action picker
+
+When `workctl config set prompt-actions-on-new true`, tracked sessions get a
+one-shot `@workctl-action-picker` flag. On first attach, tmux opens an fzf popup
+(global + trusted repo-local actions). Requires `fzf`. Reload tmux after plugin
+update: `prefix + r`.
 
 ## Status line
 
