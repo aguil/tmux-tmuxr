@@ -45,8 +45,10 @@ fi
 # Agent auto-detection on new panes/windows
 tmux set-hook -ga after-split-window \
     "run-shell -b '$WORKCTL scan --session #{session_name} --quiet 2>/dev/null || true'"
-tmux set-hook -ga after-new-window \
-    "run-shell -b '$WORKCTL scan --session #{session_name} --quiet 2>/dev/null || true'"
+
+# Scan + optional repo picker (replace on each plugin load to avoid duplicate hooks)
+tmux set-hook -g after-new-window \
+    "run-shell 'bash \"$SCRIPTS_DIR/after-new-window.sh\" #{session_name} #{window_id} #{pane_id} 2>/dev/null || true'"
 
 # Orphan cleanup when panes exit
 tmux set-hook -ga pane-exited \
@@ -56,9 +58,9 @@ tmux set-hook -ga pane-exited \
 tmux set-hook -ga session-closed \
     "run-shell -b '$WORKCTL untrack #{hook_session_name} --auto --quiet 2>/dev/null || true'"
 
-# Reconcile on client attach (covers resurrect restore)
-tmux set-hook -ga client-attached \
-    "run-shell -b '$WORKCTL reconcile --all --quiet 2>/dev/null || true'"
+# Reconcile on client attach (replace hook on reload; clears legacy attach pickers)
+tmux set-hook -g client-attached \
+    "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{session_name}; $WORKCTL reconcile --all --quiet 2>/dev/null || true'"
 
 # Pane title changes (tmux 3.5+ only)
 TMUX_VERSION=$(tmux -V | sed 's/[^0-9.]//g')

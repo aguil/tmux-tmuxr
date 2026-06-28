@@ -21,3 +21,8 @@ fi
 
 $WORKCTL_BIN track "$SESSION" --quiet 2>/dev/null || true
 $WORKCTL_BIN scan --session "$SESSION" --quiet 2>/dev/null || true
+
+SCRIPTS_DIR="${TMUXR_SCRIPTS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+# shellcheck source=sidebar-common.sh
+source "$SCRIPTS_DIR/sidebar-common.sh"
+workctl_ensure_session_sidebars "$SESSION" 2>/dev/null || true

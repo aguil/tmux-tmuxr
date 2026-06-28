@@ -1,38 +1,31 @@
 #!/usr/bin/env bash
-# Toggle the workctl sidebar in the current tmux window.
-# If a sidebar pane exists, kill it. Otherwise, create one.
+# Toggle the workctl sidebar for the entire tracked session.
 
 set -euo pipefail
 
-WORKCTL_BIN=$(tmux show-environment -g WORKCTL_BIN 2>/dev/null | cut -d= -f2-)
-SIDEBAR_WIDTH=$(${WORKCTL_BIN} config get sidebar-width 2>/dev/null || echo "40")
-SIDEBAR_POSITION=$(${WORKCTL_BIN} config get sidebar-position 2>/dev/null || echo "right")
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=sidebar-common.sh
+source "$SCRIPTS_DIR/sidebar-common.sh"
 
-# Find sidebar pane by user option @workctl-sidebar
-SIDEBAR_PANE=""
-while IFS=$'\t' read -r pane_id opt_val; do
-    if [[ "$opt_val" == "1" ]]; then
-        SIDEBAR_PANE="$pane_id"
-        break
-    fi
-done < <(tmux list-panes -F "#{pane_id}	#{@workctl-sidebar}" 2>/dev/null || true)
+SESSION=$(tmux display-message -p '#{session_name}')
+WORKCTL_BIN=$(tmux show-environment -g WORKCTL_BIN 2>/dev/null | cut -d= -f2- || true)
 
-if [[ -n "$SIDEBAR_PANE" ]]; then
-    tmux kill-pane -t "$SIDEBAR_PANE"
-    tmux display-message -d 2000 "workctl: sidebar hidden"
+if [[ -z "$WORKCTL_BIN" ]]; then
+  tmux display-message -d 4000 "workctl: WORKCTL_BIN not set (reload tmux config)"
+  exit 1
+fi
+
+if ! workctl_session_tracked "$SESSION"; then
+  tmux display-message -d 3000 "workctl: session is not tracked (prefix + S)"
+  exit 1
+fi
+
+if workctl_sidebar_visible "$SESSION"; then
+  workctl_set_sidebar_visible "$SESSION" 0
+  workctl_kill_session_sidebars "$SESSION"
+  tmux display-message -d 2000 "workctl: sidebar hidden"
 else
-    if [[ -z "$WORKCTL_BIN" ]]; then
-        tmux display-message -d 4000 "workctl: WORKCTL_BIN not set (reload tmux config)"
-        exit 1
-    fi
-
-    SPLIT_ARGS="-h -l $SIDEBAR_WIDTH"
-    if [[ "$SIDEBAR_POSITION" == "left" ]]; then
-        SPLIT_ARGS="$SPLIT_ARGS -b"
-    fi
-
-    NEW_PANE=$(tmux split-window $SPLIT_ARGS -P -F "#{pane_id}" "${WORKCTL_BIN} sidebar")
-    tmux set-option -p -t "$NEW_PANE" @workctl-sidebar 1
-    tmux last-pane
-    tmux display-message -d 2000 "workctl: sidebar shown"
+  workctl_set_sidebar_visible "$SESSION" 1
+  workctl_ensure_session_sidebars "$SESSION"
+  tmux display-message -d 2000 "workctl: sidebar shown"
 fi
