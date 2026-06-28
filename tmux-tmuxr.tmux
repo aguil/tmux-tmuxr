@@ -67,13 +67,9 @@ if awk "BEGIN { exit !($TMUX_VERSION >= 3.5) }"; then
         "run-shell -b '$WORKCTL agent title-changed #{pane_id} --quiet 2>/dev/null || true'"
 fi
 
-# --- Auto-track (opt-in) ---
-# Check if auto-track is enabled; if so, add session-created hook
-AUTO_TRACK=$($WORKCTL config get auto-track 2>/dev/null || echo "false")
-if [[ "$AUTO_TRACK" == "true" ]]; then
-    tmux set-hook -ga session-created \
-        "run-shell -b '$WORKCTL track #{session_name} --quiet 2>/dev/null || true'"
-fi
+# Auto-track on session creation (opt-in via workctl config; no tmux reload needed)
+tmux set-hook -ga session-created \
+    "run-shell -b 'bash \"$SCRIPTS_DIR/on-session-created.sh\" #{session_name} 2>/dev/null || true'"
 
 # --- Keybindings ---
 
