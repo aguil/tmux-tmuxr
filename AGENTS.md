@@ -36,6 +36,6 @@ Jujutsu colocated with git. Use `jj` only — no `git commit` / `git rebase`.
 
 ## Conventions
 
-- Hooks use `run-shell -b` and `-ga` (append, non-blocking)
+- Hooks use `run-shell -b`; lifecycle hooks use `set-hook -g` (replace on plugin reload, non-blocking)
 - Sidebar panes marked with `-sidebar 1`
 - Uppercase `W` / `S` bindings (lowercase `w` is tmux choose-tree)
