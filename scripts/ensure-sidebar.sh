@@ -52,12 +52,12 @@ fi
 SIDEBAR_WIDTH=$($WORK_BIN config get sidebar-width 2>/dev/null || echo "40")
 SIDEBAR_POSITION=$($WORK_BIN config get sidebar-position 2>/dev/null || echo "right")
 
-SPLIT_ARGS="-h -l $SIDEBAR_WIDTH -t $WINDOW_TARGET"
+split_args=(-h -l "$SIDEBAR_WIDTH" -t "$WINDOW_TARGET")
 if [[ "$SIDEBAR_POSITION" == "left" ]]; then
-  SPLIT_ARGS="$SPLIT_ARGS -b"
+  split_args+=(-b)
 fi
 
-NEW_PANE=$(tmux split-window $SPLIT_ARGS -P -F "#{pane_id}" "${WORK_BIN} sidebar")
+NEW_PANE=$(tmux split-window "${split_args[@]}" -P -F "#{pane_id}" "${WORK_BIN} sidebar")
 tmux set-option -p -t "$NEW_PANE" @work-sidebar 1
 
 MAIN_PANE=""
