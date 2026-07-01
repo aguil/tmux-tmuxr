@@ -60,7 +60,8 @@ tmux set-hook -g session-closed \
 
 # Reconcile on client attach (replace hook on reload; clears legacy attach pickers)
 tmux set-hook -g client-attached \
-    "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{hook_session}; $WORK reconcile --all --quiet 2>/dev/null || true'"
+    "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{hook_session}; bash \"$SCRIPTS_DIR/restore-window-format.sh\" 2>/dev/null || true; $WORK reconcile --all --quiet 2>/dev/null || true'"
+
 
 # Pane title changes (tmux 3.5+ only)
 TMUX_VERSION=$(tmux -V | sed 's/[^0-9.]//g')
@@ -88,3 +89,5 @@ bash "$SCRIPTS_DIR/ensure-all-sidebars.sh" &
 # --- Status-line integration ---
 # Users can add this to their status-right:
 #   set -g status-right '#($SCRIPTS_DIR/status.sh)'
+
+bash "$SCRIPTS_DIR/restore-window-format.sh"
