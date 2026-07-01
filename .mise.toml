@@ -1,3 +1,3 @@
-# Shell-only plugin; .mise.toml documents the expected toolchain for sibling workctl.
+# Shell-only plugin; .mise.toml documents the expected toolchain for sibling work.
 [tools]
-node = "24"
+node = "24.17.0"
