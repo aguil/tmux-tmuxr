@@ -3,9 +3,12 @@
 
 set -euo pipefail
 
-SESSION="${1:-}"
-WINDOW="${2:-}"
-PANE="${3:-}"
+WINDOW="${1:-}"
+PANE="${2:-}"
+SESSION=""
+if [[ -n "$WINDOW" ]]; then
+  SESSION=$(tmux display-message -p -t "$WINDOW" '#{session_name}' 2>/dev/null || true)
+fi
 if [[ -z "$SESSION" ]]; then
   exit 0
 fi

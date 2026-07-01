@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# On attach: clear stale flags and repair sidebar panes after restore.
+# Archive tracked workspace when a tmux session closes.
 
 set -euo pipefail
+
+WORK_BIN=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+if [[ -z "$WORK_BIN" ]]; then
+  exit 0
+fi
 
 SCRIPTS_DIR="${TMUXR_SCRIPTS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 # shellcheck source=hook-common.sh
 source "$SCRIPTS_DIR/hook-common.sh"
-# shellcheck source=sidebar-common.sh
-source "$SCRIPTS_DIR/sidebar-common.sh"
 
 SESSION=""
 if [[ "${1:-}" =~ ^[0-9]+$ ]]; then
@@ -15,11 +18,9 @@ if [[ "${1:-}" =~ ^[0-9]+$ ]]; then
 else
   SESSION="${1:-}"
 fi
+
 if [[ -z "$SESSION" ]]; then
   exit 0
 fi
 
-tmux set-option -t "$SESSION" -u @work-repo-picker 2>/dev/null || true
-tmux set-option -t "$SESSION" -u @work-action-picker 2>/dev/null || true
-
-work_repair_session_sidebars "$SESSION"
+$WORK_BIN untrack "$SESSION" --auto --quiet 2>/dev/null || true

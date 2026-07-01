@@ -9,7 +9,16 @@ if [[ -z "$WORK_BIN" ]]; then
   exit 0
 fi
 
-SESSION="${1:-}"
+SCRIPTS_DIR="${TMUXR_SCRIPTS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+# shellcheck source=hook-common.sh
+source "$SCRIPTS_DIR/hook-common.sh"
+
+SESSION=""
+if [[ "${1:-}" =~ ^[0-9]+$ ]]; then
+  SESSION=$(hook_session_name_from_id "$1")
+else
+  SESSION="${1:-}"
+fi
 if [[ -z "$SESSION" ]]; then
   exit 0
 fi
@@ -22,7 +31,6 @@ fi
 $WORK_BIN track "$SESSION" --quiet 2>/dev/null || true
 $WORK_BIN scan --session "$SESSION" --quiet 2>/dev/null || true
 
-SCRIPTS_DIR="${TMUXR_SCRIPTS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 # shellcheck source=sidebar-common.sh
 source "$SCRIPTS_DIR/sidebar-common.sh"
 work_ensure_session_sidebars "$SESSION" 2>/dev/null || true

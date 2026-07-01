@@ -48,7 +48,7 @@ tmux set-hook -g after-split-window \
 
 # Scan + optional repo picker (replace on each plugin load to avoid duplicate hooks)
 tmux set-hook -g after-new-window \
-    "run-shell 'bash \"$SCRIPTS_DIR/after-new-window.sh\" #{session_name} #{window_id} #{pane_id} 2>/dev/null || true'"
+    "run-shell 'bash \"$SCRIPTS_DIR/after-new-window.sh\" #{window_id} #{pane_id} 2>/dev/null || true'"
 
 # Orphan cleanup when panes exit
 tmux set-hook -g pane-exited \
@@ -56,11 +56,11 @@ tmux set-hook -g pane-exited \
 
 # Archive workspace when session closes
 tmux set-hook -g session-closed \
-    "run-shell -b '$WORK untrack #{hook_session_name} --auto --quiet 2>/dev/null || true'"
+    "run-shell -b 'bash \"$SCRIPTS_DIR/on-session-closed.sh\" #{hook_session} 2>/dev/null || true'"
 
 # Reconcile on client attach (replace hook on reload; clears legacy attach pickers)
 tmux set-hook -g client-attached \
-    "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{session_name}; $WORK reconcile --all --quiet 2>/dev/null || true'"
+    "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{hook_session}; $WORK reconcile --all --quiet 2>/dev/null || true'"
 
 # Pane title changes (tmux 3.5+ only)
 TMUX_VERSION=$(tmux -V | sed 's/[^0-9.]//g')
@@ -71,7 +71,7 @@ fi
 
 # Auto-track on session creation (opt-in via work config; no tmux reload needed)
 tmux set-hook -g session-created \
-    "run-shell -b 'bash \"$SCRIPTS_DIR/on-session-created.sh\" #{session_name} 2>/dev/null || true'"
+    "run-shell -b 'bash \"$SCRIPTS_DIR/on-session-created.sh\" #{hook_session} 2>/dev/null || true'"
 
 # --- Keybindings ---
 
