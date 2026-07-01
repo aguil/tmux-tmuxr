@@ -40,10 +40,10 @@ if [[ -n "$WORKD" ]]; then
     bash "$SCRIPTS_DIR/start-daemon.sh"
 fi
 
-# --- Hooks (all use -ga to append, run-shell -b for non-blocking) ---
+# --- Hooks (replace on plugin reload; run-shell -b for non-blocking) ---
 
 # Agent auto-detection on new panes/windows
-tmux set-hook -ga after-split-window \
+tmux set-hook -g after-split-window \
     "run-shell -b '$WORK scan --pane #{pane_id} --quiet 2>/dev/null || true'"
 
 # Scan + optional repo picker (replace on each plugin load to avoid duplicate hooks)
@@ -51,11 +51,11 @@ tmux set-hook -g after-new-window \
     "run-shell 'bash \"$SCRIPTS_DIR/after-new-window.sh\" #{session_name} #{window_id} #{pane_id} 2>/dev/null || true'"
 
 # Orphan cleanup when panes exit
-tmux set-hook -ga pane-exited \
+tmux set-hook -g pane-exited \
     "run-shell -b '$WORK agent detach #{hook_pane} --quiet 2>/dev/null || true'"
 
 # Archive workspace when session closes
-tmux set-hook -ga session-closed \
+tmux set-hook -g session-closed \
     "run-shell -b '$WORK untrack #{hook_session_name} --auto --quiet 2>/dev/null || true'"
 
 # Reconcile on client attach (replace hook on reload; clears legacy attach pickers)
@@ -65,12 +65,12 @@ tmux set-hook -g client-attached \
 # Pane title changes (tmux 3.5+ only)
 TMUX_VERSION=$(tmux -V | sed 's/[^0-9.]//g')
 if awk "BEGIN { exit !($TMUX_VERSION >= 3.5) }"; then
-    tmux set-hook -ga pane-title-changed \
+    tmux set-hook -g pane-title-changed \
         "run-shell -b '$WORK agent title-changed #{pane_id} --quiet 2>/dev/null || true'"
 fi
 
 # Auto-track on session creation (opt-in via work config; no tmux reload needed)
-tmux set-hook -ga session-created \
+tmux set-hook -g session-created \
     "run-shell -b 'bash \"$SCRIPTS_DIR/on-session-created.sh\" #{session_name} 2>/dev/null || true'"
 
 # --- Keybindings ---
