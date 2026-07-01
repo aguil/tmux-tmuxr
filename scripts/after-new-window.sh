@@ -20,7 +20,7 @@ if [[ -n "$WORK_BIN" ]]; then
   fi
 fi
 
-bash "$SCRIPTS_DIR/on-new-window.sh" "$SESSION" "$WINDOW" "$PANE"
+bash "$SCRIPTS_DIR/on-new-window.sh" "$SESSION" "$WINDOW" "$PANE" || true
 
 if [[ -n "$WINDOW" ]]; then
   bash "$SCRIPTS_DIR/ensure-sidebar.sh" "$WINDOW" 2>/dev/null || true
