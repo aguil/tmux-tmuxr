@@ -48,7 +48,7 @@ tmux set-hook -g after-split-window \
 
 # Scan + optional repo picker (replace on each plugin load to avoid duplicate hooks)
 tmux set-hook -g after-new-window \
-    "run-shell 'bash \"$SCRIPTS_DIR/after-new-window.sh\" #{window_id} #{pane_id} 2>/dev/null || true'"
+    "run-shell -b 'bash \"$SCRIPTS_DIR/after-new-window.sh\" #{window_id} #{pane_id} 2>/dev/null || true'"
 
 # Orphan cleanup when panes exit
 tmux set-hook -g pane-exited \
