@@ -27,7 +27,12 @@ if [[ -z "$SCAN_DIRS" ]]; then
 fi
 
 if ! $WORK_BIN session is-tracked "$SESSION" --quiet 2>/dev/null; then
-  exit 0
+  AUTO_TRACK=$($WORK_BIN config get auto-track 2>/dev/null || echo "false")
+  if [[ "$AUTO_TRACK" == "true" ]]; then
+    $WORK_BIN track "$SESSION" --quiet 2>/dev/null || true
+  else
+    exit 0
+  fi
 fi
 
 ACTIVE_PANE="$PANE"
