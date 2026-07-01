@@ -48,7 +48,7 @@ work_kill_session_sidebars() {
     [[ -z "$pane_id" ]] && continue
     tmux kill-pane -t "$pane_id" 2>/dev/null || true
   done < <(
-    tmux list-panes -t "$session" -F '#{pane_id}	#{@work-sidebar}' 2>/dev/null |
+    tmux list-panes -s -t "$session" -F '#{pane_id}	#{@work-sidebar}' 2>/dev/null |
       awk -F'\t' '$2 == "1" { print $1 }'
   )
 }
