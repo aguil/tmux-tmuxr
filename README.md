@@ -54,7 +54,7 @@ Reactive hooks (background `run-shell -b` unless noted):
 
 ## Repo picker on new window
 
-When configured, `prefix+c` in a tracked session opens an fzf popup to pick a
+When configured, creating a new window in a tracked session opens an fzf popup to pick a
 repo from `repo-scan-dir`, create a project checkout, associate a tree, and cd
 the new window:
 
