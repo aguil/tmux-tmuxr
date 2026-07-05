@@ -41,7 +41,7 @@ tmux set-option -gq @resurrect-hook-post-save-layout \
 tmux set-option -gq @resurrect-hook-pre-restore-all \
     "tmux set-option -gq @work-restoring 1; tmux set-option -gqu @work-restore-finished-at"
 tmux set-option -gq @resurrect-hook-post-restore-all \
-    "tmux set-option -gqu @work-restoring; tmux set-option -gq @work-restore-finished-at \$(date +%s)"
+    "bash \"$SCRIPTS_DIR/on-post-restore.sh\""
 
 # --- Daemon lifecycle ---
 
