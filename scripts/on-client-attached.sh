@@ -22,4 +22,13 @@ fi
 tmux set-option -t "$SESSION" -u @work-repo-picker 2>/dev/null || true
 tmux set-option -t "$SESSION" -u @work-action-picker 2>/dev/null || true
 
+WORK_BIN=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+if [[ -n "$WORK_BIN" ]]; then
+  $WORK_BIN session hydrate "$SESSION" --quiet 2>/dev/null || true
+fi
+
 work_repair_session_sidebars "$SESSION"
+
+if [[ -n "${TMUX:-}" ]]; then
+  tmux run-shell "sleep 0.5; bash '$SCRIPTS_DIR/repair-all-sidebars.sh' '$SESSION'" >/dev/null 2>&1 || true
+fi

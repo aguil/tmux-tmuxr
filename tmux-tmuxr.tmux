@@ -34,6 +34,15 @@ tmux set-environment -g WORK_BIN "$WORK"
 tmux set-environment -g WORKD_BIN "$WORKD"
 tmux set-environment -g TMUXR_SCRIPTS_DIR "$SCRIPTS_DIR"
 
+# Mark tmux-resurrect restores so new-window hooks do not prompt for repos
+# while saved sessions/windows are being recreated.
+tmux set-option -gq @resurrect-hook-post-save-layout \
+    "bash \"$SCRIPTS_DIR/filter-resurrect-save.sh\""
+tmux set-option -gq @resurrect-hook-pre-restore-all \
+    "tmux set-option -gq @work-restoring 1; tmux set-option -gqu @work-restore-finished-at"
+tmux set-option -gq @resurrect-hook-post-restore-all \
+    "bash \"$SCRIPTS_DIR/on-post-restore.sh\""
+
 # --- Daemon lifecycle ---
 
 if [[ -n "$WORKD" ]]; then

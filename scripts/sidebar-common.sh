@@ -7,7 +7,21 @@ sidebar_common_dir() {
 
 work_session_tracked() {
   local session="$1"
-  tmux show-option -t "$session" -v @work-workspace &>/dev/null
+  local work_bin
+
+  if tmux show-option -t "$session" -v @work-workspace &>/dev/null; then
+    return 0
+  fi
+
+  work_bin=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+  if [[ -z "$work_bin" ]]; then
+    return 1
+  fi
+
+  if $work_bin session hydrate "$session" --quiet 2>/dev/null; then
+    return 0
+  fi
+  return 1
 }
 
 work_sidebar_visible() {
@@ -48,7 +62,7 @@ work_kill_session_sidebars() {
     [[ -z "$pane_id" ]] && continue
     tmux kill-pane -t "$pane_id" 2>/dev/null || true
   done < <(
-    tmux list-panes -t "$session" -F '#{pane_id}	#{@work-sidebar}' 2>/dev/null |
+    tmux list-panes -s -t "$session" -F '#{pane_id}	#{@work-sidebar}' 2>/dev/null |
       awk -F'\t' '$2 == "1" { print $1 }'
   )
 }

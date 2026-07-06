@@ -16,6 +16,19 @@ if [[ -z "$WORK_BIN" ]]; then
   exit 0
 fi
 
+RESTORING=$(tmux show-option -gqv @work-restoring 2>/dev/null || echo "")
+if [[ "$RESTORING" == "1" ]]; then
+  exit 0
+fi
+
+RESTORE_FINISHED_AT=$(tmux show-option -gqv @work-restore-finished-at 2>/dev/null || echo "")
+if [[ "$RESTORE_FINISHED_AT" =~ ^[0-9]+$ ]]; then
+  NOW=$(date +%s)
+  if ((NOW - RESTORE_FINISHED_AT < 10)); then
+    exit 0
+  fi
+fi
+
 PROMPT=$($WORK_BIN config get prompt-repos-on-new-window 2>/dev/null || echo "false")
 if [[ "$PROMPT" != "true" ]]; then
   exit 0

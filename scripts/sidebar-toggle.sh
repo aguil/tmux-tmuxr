@@ -17,7 +17,7 @@ fi
 
 if ! work_session_tracked "$SESSION"; then
   tmux display-message -d 3000 "work: session is not tracked (prefix + S)"
-  exit 1
+  exit 0
 fi
 
 if work_sidebar_visible "$SESSION"; then
