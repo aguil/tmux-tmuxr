@@ -5,6 +5,60 @@ sidebar_common_dir() {
   cd "$(dirname "${BASH_SOURCE[1]:-${BASH_SOURCE[0]}}")" && pwd
 }
 
+work_sidebar_config_width() {
+  local work_bin width
+
+  width=$(tmux show-environment -g TMUXR_SIDEBAR_WIDTH 2>/dev/null | cut -d= -f2- || true)
+  if [[ -n "$width" ]]; then
+    echo "$width"
+    return
+  fi
+
+  work_bin=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+  if [[ -n "$work_bin" ]]; then
+    width=$($work_bin config get sidebar-width 2>/dev/null || echo "40")
+    tmux set-environment -g TMUXR_SIDEBAR_WIDTH "$width" 2>/dev/null || true
+    echo "$width"
+    return
+  fi
+
+  echo "40"
+}
+
+work_sidebar_config_position() {
+  local work_bin position
+
+  position=$(tmux show-environment -g TMUXR_SIDEBAR_POSITION 2>/dev/null | cut -d= -f2- || true)
+  if [[ -n "$position" ]]; then
+    echo "$position"
+    return
+  fi
+
+  work_bin=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+  if [[ -n "$work_bin" ]]; then
+    position=$($work_bin config get sidebar-position 2>/dev/null || echo "right")
+    tmux set-environment -g TMUXR_SIDEBAR_POSITION "$position" 2>/dev/null || true
+    echo "$position"
+    return
+  fi
+
+  echo "right"
+}
+
+work_refresh_sidebar_config_cache() {
+  local work_bin width position
+
+  work_bin=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+  if [[ -z "$work_bin" ]]; then
+    return 0
+  fi
+
+  width=$($work_bin config get sidebar-width 2>/dev/null || echo "40")
+  position=$($work_bin config get sidebar-position 2>/dev/null || echo "right")
+  tmux set-environment -g TMUXR_SIDEBAR_WIDTH "$width"
+  tmux set-environment -g TMUXR_SIDEBAR_POSITION "$position"
+}
+
 work_session_tracked() {
   local session="$1"
   local work_bin
@@ -67,6 +121,23 @@ work_kill_session_sidebars() {
   )
 }
 
+work_ensure_sidebar_windows() {
+  local session="$1"
+  local active_window="$2"
+  local window_target
+
+  if [[ -n "$active_window" ]]; then
+    bash "$(sidebar_common_dir)/ensure-sidebar.sh" "$active_window" 2>/dev/null || true
+  fi
+
+  while IFS= read -r window_target; do
+    [[ -z "$window_target" || "$window_target" == "$active_window" ]] && continue
+    bash "$(sidebar_common_dir)/ensure-sidebar.sh" "$window_target" 2>/dev/null &
+  done < <(
+    tmux list-windows -t "$session" -F '#{session_name}:#{window_index}' 2>/dev/null || true
+  )
+}
+
 work_resize_all_sidebars() {
   local target_width window_width pane_width width min_main min_sidebar work_bin
 
@@ -75,7 +146,8 @@ work_resize_all_sidebars() {
     return 0
   fi
 
-  target_width=$($work_bin config get sidebar-width 2>/dev/null || echo "40")
+  work_refresh_sidebar_config_cache
+  target_width=$(work_sidebar_config_width)
   min_main=40
   min_sidebar=24
 
@@ -106,7 +178,7 @@ work_resize_all_sidebars() {
 
 work_repair_session_sidebars() {
   local session="$1"
-  local work_bin pane_id dead marked
+  local work_bin pane_id dead marked active_window
 
   if ! work_session_tracked "$session"; then
     return 0
@@ -134,19 +206,14 @@ work_repair_session_sidebars() {
     tmux list-panes -t "$session" -F '#{pane_id}	#{pane_dead}	#{@work-sidebar}	#{pane_current_command}' 2>/dev/null || true
   )
 
-  local window_target
-  while IFS= read -r window_target; do
-    [[ -z "$window_target" ]] && continue
-    bash "$(sidebar_common_dir)/ensure-sidebar.sh" "$window_target" 2>/dev/null || true
-  done < <(
-    tmux list-windows -t "$session" -F '#{session_name}:#{window_index}' 2>/dev/null || true
-  )
+  active_window=$(tmux display-message -p -t "$session" '#{session_name}:#{window_index}' 2>/dev/null || true)
+  work_ensure_sidebar_windows "$session" "$active_window"
   work_resize_all_sidebars
 }
 
 work_ensure_session_sidebars() {
   local session="$1"
-  local window_target
+  local active_window
 
   if ! work_session_tracked "$session"; then
     return 0
@@ -156,11 +223,7 @@ work_ensure_session_sidebars() {
     return 0
   fi
 
-  while IFS= read -r window_target; do
-    [[ -z "$window_target" ]] && continue
-    bash "$(sidebar_common_dir)/ensure-sidebar.sh" "$window_target" 2>/dev/null || true
-  done < <(
-    tmux list-windows -t "$session" -F '#{session_name}:#{window_index}' 2>/dev/null || true
-  )
+  active_window=$(tmux display-message -p -t "$session" '#{session_name}:#{window_index}' 2>/dev/null || true)
+  work_ensure_sidebar_windows "$session" "$active_window"
   work_resize_all_sidebars
 }
