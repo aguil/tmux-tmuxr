@@ -25,6 +25,7 @@ if work_sidebar_visible "$SESSION"; then
   work_kill_session_sidebars "$SESSION"
   tmux display-message -d 2000 "work: sidebar hidden"
 else
+  work_refresh_sidebar_config_cache
   work_set_sidebar_visible "$SESSION" 1
   work_ensure_session_sidebars "$SESSION"
   tmux display-message -d 2000 "work: sidebar shown"

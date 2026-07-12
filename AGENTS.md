@@ -38,8 +38,8 @@ Jujutsu colocated with git. Use `jj` only — no `git commit` / `git rebase`.
 
 - Entry file: `tmux-tmuxr.tmux` (TPM sources all `*.tmux` in the clone root).
 - Install line: `set -g @plugin 'aguil/tmux-tmuxr'` (optional pin `#vX.Y.Z`).
-- Exports `WORK_BIN`, `WORKD_BIN`, `TMUXR_SCRIPTS_DIR`, `TMUXR_VERSION` via
-  `tmux set-environment`.
+- Exports `WORK_BIN`, `WORKD_BIN`, `TMUXR_SCRIPTS_DIR`, `TMUXR_VERSION`,
+  `TMUXR_SIDEBAR_WIDTH`, and `TMUXR_SIDEBAR_POSITION` via `tmux set-environment`.
 - TPM users get `work` from `PATH` (global `npm install -g @aguil/work`); dev
   sibling `../work/dist/` takes precedence when present.
 - No build step — git tags are releases. Validate with `bash scripts/check.sh`.

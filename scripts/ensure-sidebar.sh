@@ -49,8 +49,8 @@ if [[ "${#LIVE_SIDEBARS[@]}" -ge 1 ]]; then
   exit 0
 fi
 
-SIDEBAR_WIDTH=$($WORK_BIN config get sidebar-width 2>/dev/null || echo "40")
-SIDEBAR_POSITION=$($WORK_BIN config get sidebar-position 2>/dev/null || echo "right")
+SIDEBAR_WIDTH=$(work_sidebar_config_width)
+SIDEBAR_POSITION=$(work_sidebar_config_position)
 
 split_args=(-h -l "$SIDEBAR_WIDTH" -t "$WINDOW_TARGET")
 if [[ "$SIDEBAR_POSITION" == "left" ]]; then

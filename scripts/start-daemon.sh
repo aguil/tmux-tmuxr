@@ -31,5 +31,6 @@ fi
 mkdir -p "$RUNTIME_DIR"
 
 # Start daemon in background, detached from tmux
-nohup $WORKD_BIN >"$RUNTIME_DIR/workd.log" 2>&1 &
+read -r -a WORKD_CMD <<<"$WORKD_BIN"
+nohup "${WORKD_CMD[@]}" >"$RUNTIME_DIR/workd.log" 2>&1 &
 disown
