@@ -67,6 +67,43 @@ work_kill_session_sidebars() {
   )
 }
 
+work_resize_all_sidebars() {
+  local target_width window_width pane_width width min_main min_sidebar work_bin
+
+  work_bin=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
+  if [[ -z "$work_bin" ]]; then
+    return 0
+  fi
+
+  target_width=$($work_bin config get sidebar-width 2>/dev/null || echo "40")
+  min_main=40
+  min_sidebar=24
+
+  while IFS=$'\t' read -r pane_id session_name dead marked window_width pane_width; do
+    [[ "$marked" != "1" || "$dead" == "1" ]] && continue
+    if ! work_sidebar_visible "$session_name"; then
+      continue
+    fi
+
+    width=$target_width
+    if [[ "$window_width" =~ ^[0-9]+$ ]]; then
+      if (( window_width - min_main < min_sidebar )); then
+        continue
+      fi
+      if (( width > window_width - min_main )); then
+        width=$((window_width - min_main))
+      fi
+    fi
+    if [[ "$pane_width" =~ ^[0-9]+$ ]] && (( pane_width == width )); then
+      continue
+    fi
+
+    tmux resize-pane -t "$pane_id" -x "$width" 2>/dev/null || true
+  done < <(
+    tmux list-panes -a -F '#{pane_id}	#{session_name}	#{pane_dead}	#{@work-sidebar}	#{window_width}	#{pane_width}' 2>/dev/null || true
+  )
+}
+
 work_repair_session_sidebars() {
   local session="$1"
   local work_bin pane_id dead marked
@@ -104,6 +141,7 @@ work_repair_session_sidebars() {
   done < <(
     tmux list-windows -t "$session" -F '#{session_name}:#{window_index}' 2>/dev/null || true
   )
+  work_resize_all_sidebars
 }
 
 work_ensure_session_sidebars() {
@@ -124,4 +162,5 @@ work_ensure_session_sidebars() {
   done < <(
     tmux list-windows -t "$session" -F '#{session_name}:#{window_index}' 2>/dev/null || true
   )
+  work_resize_all_sidebars
 }

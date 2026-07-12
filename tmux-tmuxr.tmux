@@ -89,6 +89,9 @@ tmux set-hook -g session-closed \
 tmux set-hook -g client-attached \
     "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{hook_session}; bash \"$SCRIPTS_DIR/restore-window-format.sh\" 2>/dev/null || true; $WORK reconcile --all --quiet 2>/dev/null || true'"
 
+# Restore sidebar width after terminal/display resize (e.g. disconnect external monitor)
+tmux set-hook -g client-resized \
+    "run-shell -b 'bash \"$SCRIPTS_DIR/resize-sidebars.sh\" 2>/dev/null || true'"
 
 # Pane title changes (tmux 3.5+ only)
 TMUX_VERSION=$(tmux -V | sed 's/[^0-9.]//g')
