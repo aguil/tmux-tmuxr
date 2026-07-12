@@ -1,18 +1,19 @@
 # tmux-tmuxr
 
-TPM plugin for [work](https://github.com/aguil/work). Sets tmux hooks,
-keybindings, and status-line integration; starts `workd` and manages sidebar
-panes.
+TPM plugin inspired by [Herdr](https://herdr.dev) for tmux-native agent
+workspaces. Companion to [work](https://github.com/aguil/work) — sets tmux
+hooks, keybindings, and status-line integration; starts `workd` and manages
+sidebar panes.
 
 ## Requirements
 
-| Component        | Required | Notes                                              |
-| ---------------- | -------- | -------------------------------------------------- |
-| tmux 3.x         | Yes      | 3.5+ for `pane-title-changed` hook                 |
-| `@aguil/work`    | Yes      | `work` and `workd` on `PATH` (`npm install -g`)    |
-| [TPM](https://github.com/tmux-plugins/tpm) | Yes (TPM install) | Or direct `run` for local dev |
-| fzf              | Optional | New-window repo picker                             |
-| tmux-resurrect   | Optional | Sidebar survives session restore (hooks configured) |
+| Component                                  | Required          | Notes                                               |
+| ------------------------------------------ | ----------------- | --------------------------------------------------- |
+| tmux 3.x                                   | Yes               | 3.5+ for `pane-title-changed` hook                  |
+| `@aguil/work`                              | Yes               | `work` and `workd` on `PATH` (`npm install -g`)     |
+| [TPM](https://github.com/tmux-plugins/tpm) | Yes (TPM install) | Or direct `run` for local dev                       |
+| fzf                                        | Optional          | New-window repo picker                              |
+| tmux-resurrect                             | Optional          | Sidebar survives session restore (hooks configured) |
 
 **Compatibility:** tmux-tmuxr `0.1.x` requires `@aguil/work` **≥ 0.1.0**.
 
@@ -56,10 +57,10 @@ present.
 
 ### Upgrade and uninstall
 
-| Action  | Keys / steps                                              |
-| ------- | --------------------------------------------------------- |
-| Update  | `prefix + U` (TPM update all), then `prefix + r`          |
-| Remove  | Delete the `@plugin` line, then `prefix + alt+u`          |
+| Action | Keys / steps                                     |
+| ------ | ------------------------------------------------ |
+| Update | `prefix + U` (TPM update all), then `prefix + r` |
+| Remove | Delete the `@plugin` line, then `prefix + alt+u` |
 
 ## Local development
 
