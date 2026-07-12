@@ -1,6 +1,6 @@
 # tmux-tmuxr
 
-TPM plugin inspired by [Herdr](https://herdr.dev) for tmux-native agent
+TPM plugin inspired by [herdr](https://herdr.dev) for tmux-native agent
 workspaces. Companion to [work](https://github.com/aguil/work) — sets tmux
 hooks, keybindings, and status-line integration; starts `workd` and manages
 sidebar panes.
