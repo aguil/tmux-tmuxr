@@ -5,14 +5,19 @@ set -euo pipefail
 
 WORK_BIN=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
 if [[ -z "$WORK_BIN" ]]; then
-  tmux display-message -d 4000 "work: WORK_BIN not set (reload tmux config)"
-  exit 1
+  if command -v work >/dev/null 2>&1; then
+    WORK_BIN=work
+    tmux set-environment -g WORK_BIN "$WORK_BIN" 2>/dev/null || true
+  else
+    tmux display-message -d 4000 "work: WORK_BIN not set (reload tmux config)"
+    exit 0
+  fi
 fi
 
 SESSION=$(tmux display-message -p '#{session_name}')
 MSG=$($WORK_BIN track "$SESSION" 2>&1) || {
   tmux display-message -d 4000 "work: $MSG"
-  exit 1
+  exit 0
 }
 
 $WORK_BIN scan --session "$SESSION" --quiet 2>/dev/null || true
