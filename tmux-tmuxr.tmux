@@ -52,6 +52,11 @@ if [[ -n "$TMUXR_VERSION" ]]; then
     tmux set-environment -g TMUXR_VERSION "$TMUXR_VERSION"
 fi
 
+TMUXR_SIDEBAR_WIDTH=$($WORK config get sidebar-width 2>/dev/null || echo "40")
+TMUXR_SIDEBAR_POSITION=$($WORK config get sidebar-position 2>/dev/null || echo "right")
+tmux set-environment -g TMUXR_SIDEBAR_WIDTH "$TMUXR_SIDEBAR_WIDTH"
+tmux set-environment -g TMUXR_SIDEBAR_POSITION "$TMUXR_SIDEBAR_POSITION"
+
 # Mark tmux-resurrect restores so new-window hooks do not prompt for repos
 # while saved sessions/windows are being recreated.
 tmux set-option -gq @resurrect-hook-post-save-layout \
@@ -88,6 +93,10 @@ tmux set-hook -g session-closed \
 # Reconcile on client attach (replace hook on reload; clears legacy attach pickers)
 tmux set-hook -g client-attached \
     "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{hook_session}; bash \"$SCRIPTS_DIR/restore-window-format.sh\" 2>/dev/null || true; $WORK reconcile --all --quiet 2>/dev/null || true'"
+
+# Restore sidebar width after terminal/display resize (e.g. disconnect external monitor)
+tmux set-hook -g client-resized \
+    "run-shell -b 'bash \"$SCRIPTS_DIR/resize-sidebars.sh\" 2>/dev/null || true'"
 
 
 # Pane title changes (tmux 3.5+ only)

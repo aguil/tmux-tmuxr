@@ -22,7 +22,7 @@ fi
 
 FZF_OPTS=(
   --delimiter=$'\t'
-  --with-nth=3,2,1
+  --with-nth='3,2,1'
   --prompt="repo> "
   --header="Pick a repo for this window (Esc to skip)"
 )

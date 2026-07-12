@@ -48,28 +48,24 @@ case "$theme" in
     foreground="#a9b1d6"
     green="#73daca"
     bblack="#414868"
-    yellow="#e0af68"
     ;;
   moon)
     background="#222436"
     foreground="#828bb8"
     green="#4fd6be"
     bblack="#444a73"
-    yellow="#e0af68"
     ;;
   day)
     background="#d0d5e3"
     foreground="#6172b0"
     green="#41a6b5"
     bblack="#a8aecb"
-    yellow="#8c6c3e"
     ;;
   *)
     background="#1A1B26"
     foreground="#a9b1d6"
     green="#73daca"
     bblack="#2A2F41"
-    yellow="#e0af68"
     ;;
 esac
 
