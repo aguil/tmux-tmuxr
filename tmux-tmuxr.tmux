@@ -15,6 +15,12 @@ fi
 # Prefer local development build, then global install.
 resolve_bin() {
     local name="$1"
+    local option
+    option=$(tmux show-option -gqv "@${name}-bin" 2>/dev/null || true)
+    if [[ -n "$option" ]]; then
+        echo "$option"
+        return
+    fi
     local dev_path="$CURRENT_DIR/../work/dist/${name}.mjs"
     if [[ -x "$dev_path" ]] || [[ -f "$dev_path" ]]; then
         echo "node $dev_path"
