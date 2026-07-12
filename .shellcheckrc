@@ -1,0 +1,2 @@
+# Sourced helpers use explicit # shellcheck source= paths in scripts/.
+disable=SC1091

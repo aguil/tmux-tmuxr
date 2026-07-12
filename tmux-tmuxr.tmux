@@ -4,6 +4,12 @@
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$CURRENT_DIR/scripts"
+MIN_WORK_VERSION="0.1.0"
+
+TMUXR_VERSION=""
+if [[ -f "$CURRENT_DIR/VERSION" ]]; then
+    TMUXR_VERSION="$(tr -d '[:space:]' <"$CURRENT_DIR/VERSION")"
+fi
 
 # Resolve work and workd binaries.
 # Prefer local development build, then global install.
@@ -25,7 +31,16 @@ WORK=$(resolve_bin "work")
 WORKD=$(resolve_bin "workd")
 
 if [[ -z "$WORK" ]]; then
-    tmux display-message "tmux-tmuxr: work not found"
+    tmux display-message "tmux-tmuxr: work not found (npm install -g @aguil/work)"
+    exit 1
+fi
+
+read -r -a WORK_CMD <<<"$WORK"
+WORK_VER=$("${WORK_CMD[@]}" --version 2>/dev/null | tr -d '[:space:]' || true)
+if [[ -n "$WORK_VER" ]] &&
+    [[ "$(printf '%s\n' "$MIN_WORK_VERSION" "$WORK_VER" | sort -V | head -1)" != "$MIN_WORK_VERSION" ]]; then
+    tmux display-message \
+        "tmux-tmuxr: work $WORK_VER < $MIN_WORK_VERSION (npm install -g @aguil/work)"
     exit 1
 fi
 
@@ -33,6 +48,9 @@ fi
 tmux set-environment -g WORK_BIN "$WORK"
 tmux set-environment -g WORKD_BIN "$WORKD"
 tmux set-environment -g TMUXR_SCRIPTS_DIR "$SCRIPTS_DIR"
+if [[ -n "$TMUXR_VERSION" ]]; then
+    tmux set-environment -g TMUXR_VERSION "$TMUXR_VERSION"
+fi
 
 # Mark tmux-resurrect restores so new-window hooks do not prompt for repos
 # while saved sessions/windows are being recreated.
