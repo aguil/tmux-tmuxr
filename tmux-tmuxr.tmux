@@ -4,7 +4,6 @@
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$CURRENT_DIR/scripts"
-MIN_WORK_VERSION="0.1.0"
 
 TMUXR_VERSION=""
 if [[ -f "$CURRENT_DIR/VERSION" ]]; then
@@ -13,19 +12,8 @@ fi
 
 # Resolve work and workd binaries.
 # Prefer local development build, then global install.
-resolve_bin() {
-    local name="$1"
-    local dev_path="$CURRENT_DIR/../work/dist/${name}.mjs"
-    if [[ -x "$dev_path" ]] || [[ -f "$dev_path" ]]; then
-        echo "node $dev_path"
-        return
-    fi
-    if command -v "$name" &>/dev/null; then
-        echo "$name"
-        return
-    fi
-    echo ""
-}
+# shellcheck source=scripts/work-bin-common.sh
+source "$SCRIPTS_DIR/work-bin-common.sh"
 
 WORK=$(resolve_bin "work")
 WORKD=$(resolve_bin "workd")
@@ -35,10 +23,8 @@ if [[ -z "$WORK" ]]; then
     exit 1
 fi
 
-read -r -a WORK_CMD <<<"$WORK"
-WORK_VER=$("${WORK_CMD[@]}" --version 2>/dev/null | tr -d '[:space:]' || true)
-if [[ -n "$WORK_VER" ]] &&
-    [[ "$(printf '%s\n' "$MIN_WORK_VERSION" "$WORK_VER" | sort -V | head -1)" != "$MIN_WORK_VERSION" ]]; then
+if ! work_meets_min_version "$WORK"; then
+    WORK_VER=$(work_bin_version "$WORK")
     tmux display-message \
         "tmux-tmuxr: work $WORK_VER < $MIN_WORK_VERSION (npm install -g @aguil/work)"
     exit 1
