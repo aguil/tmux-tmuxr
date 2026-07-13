@@ -103,7 +103,10 @@ After the first release-please setup merges to `main`:
 1. Tag **`v0.1.0`** on the commit that matches `VERSION` / published changelog
    (align with `@aguil/work@0.1.0`).
 2. Create the GitHub Release from that tag if release-please did not already.
-3. Verify TPM install: `set -g @plugin 'aguil/tmux-tmuxr#v0.1.0'`, then
+3. If a release used a component-prefixed tag (e.g. `tmux-tmuxr-v0.1.1`), add a
+   matching **`v0.1.1`** tag on the same commit so TPM pins
+   `#vX.Y.Z` work as documented.
+4. Verify TPM install: `set -g @plugin 'aguil/tmux-tmuxr#v0.1.0'`, then
    `prefix + I`.
 
 ### Compatibility with `@aguil/work`
