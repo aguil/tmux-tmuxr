@@ -9,6 +9,15 @@ Entries from the next release onward are updated by
 [release-please](https://github.com/googleapis/release-please) when the release
 PR merges. See [CONTRIBUTING.md](./CONTRIBUTING.md#releasing).
 
+## [0.1.3](https://github.com/aguil/tmux-tmuxr/compare/v0.1.2...v0.1.3) (2026-07-13)
+
+
+### Fixed
+
+* handle local work binary overrides ([7e39e3c](https://github.com/aguil/tmux-tmuxr/commit/7e39e3c051cda865d3f20b99bbc36fd82b1dfee4))
+* **track:** gate WORK_BIN fallback on MIN_WORK_VERSION ([c7dfccf](https://github.com/aguil/tmux-tmuxr/commit/c7dfccf569772de069100abc19c59ffab21e5021))
+* **track:** share WORK_BIN resolution with plugin entry ([4e7e213](https://github.com/aguil/tmux-tmuxr/commit/4e7e21308622045e18fe75cd346d60d8740ebf36))
+
 ## [0.1.2](https://github.com/aguil/tmux-tmuxr/compare/v0.1.1...v0.1.2) (2026-07-13)
 
 
