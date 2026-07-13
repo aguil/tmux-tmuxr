@@ -11,6 +11,12 @@ WORK_BIN=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
 if [[ -z "$WORK_BIN" ]]; then
   WORK_BIN=$(resolve_bin work)
   if [[ -n "$WORK_BIN" ]]; then
+    if ! work_meets_min_version "$WORK_BIN"; then
+      WORK_VER=$(work_bin_version "$WORK_BIN")
+      tmux display-message -d 4000 \
+        "tmux-tmuxr: work $WORK_VER < $MIN_WORK_VERSION (npm install -g @aguil/work)"
+      exit 1
+    fi
     tmux set-environment -g WORK_BIN "$WORK_BIN" 2>/dev/null || true
   else
     tmux display-message -d 4000 "work: WORK_BIN not set (reload tmux config)"
