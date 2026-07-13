@@ -22,7 +22,7 @@ echo "executable bits …"
 EXEC_REQUIRED=(tmux-tmuxr.tmux)
 for f in scripts/*.sh; do
   case "$(basename "$f")" in
-    hook-common.sh | sidebar-common.sh) continue ;;
+    hook-common.sh | sidebar-common.sh | work-bin-common.sh) continue ;;
   esac
   EXEC_REQUIRED+=("$f")
 done
