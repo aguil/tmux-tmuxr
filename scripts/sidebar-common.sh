@@ -7,7 +7,7 @@ sidebar_common_dir() {
 
 work_session_tracked() {
   local session="$1"
-  tmux show-option -t "$session" -v @work-workspace &>/dev/null
+  tmux show-option -t "$session" -qv @work-workspace &>/dev/null
 }
 
 work_sidebar_visible() {
