@@ -63,7 +63,7 @@ work_session_tracked() {
   local session="$1"
   local work_bin
 
-  if tmux show-option -t "$session" -v @work-workspace &>/dev/null; then
+  if tmux show-option -t "$session" -qv @work-workspace &>/dev/null; then
     return 0
   fi
 
