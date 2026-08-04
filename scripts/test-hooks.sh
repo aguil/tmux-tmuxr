@@ -214,16 +214,36 @@ start_server "" default
 tmux_test set-environment -g WORK_BIN /bin/true
 tmux_test set-environment -g TMUXR_SIDEBAR_WIDTH 40
 
+# Count passes by shimming `tmux` on PATH rather than reading show-messages:
+# whether the server logs client commands there varies by tmux version, and a
+# silent version would make this case pass vacuously. Each resize pass runs
+# exactly one server-wide `list-panes -a`.
+SHIM_DIR="$TMPROOT/shim"
+PASS_LOG="$TMPROOT/passes.log"
+mkdir -p "$SHIM_DIR"
+: >"$PASS_LOG"
+REAL_TMUX="$(command -v tmux)"
+cat >"$SHIM_DIR/tmux" <<EOF
+#!/usr/bin/env bash
+# Two independent matches, not one glob: "list-panes -a" shares a single space
+# between the words, which a single pattern would consume.
+args=" \$* "
+if [[ "\$args" == *" list-panes "* && "\$args" == *" -a "* ]]; then
+  echo pass >>"$PASS_LOG"
+fi
+exec "$REAL_TMUX" "\$@"
+EOF
+chmod +x "$SHIM_DIR/tmux"
+
 # Sustain events for well over a debounce window, the way a drag does.
 burst_end=$((SECONDS + 2))
 while (( SECONDS < burst_end )); do
-  bash "$SCRIPTS_DIR/resize-sidebars.sh" >/dev/null 2>&1
+  PATH="$SHIM_DIR:$PATH" bash "$SCRIPTS_DIR/resize-sidebars.sh" >/dev/null 2>&1
   sleep 0.05
 done
 sleep 1
 
-# Each pass runs one server-wide `list-panes -a`, which the server logs.
-passes=$(tmux_test show-messages 2>/dev/null | grep -c 'list-panes -a')
+passes=$(grep -c pass "$PASS_LOG" 2>/dev/null)
 passes=${passes:-0}
 if (( passes >= 1 && passes <= 3 )); then
   ok "a 2s event stream produced $passes resize pass(es)"
