@@ -9,6 +9,12 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPTS_DIR="$ROOT/scripts"
 
+# A tmux client prefers $TMUX over the socket implied by TMUX_TMPDIR, so running
+# the suite from inside a session would otherwise let the dispatchers under test
+# -- which invoke bare `tmux` -- reach the developer's own server and resize
+# their real sidebars. Isolation has to start by dropping the inherited session.
+unset TMUX TMUX_PANE
+
 TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/tmuxr-test.XXXXXX")"
 export TMUX_TMPDIR="$TMPROOT"
 export XDG_RUNTIME_DIR="$TMPROOT"
