@@ -86,7 +86,8 @@ tmux source-file ~/.tmux.conf
 
 ## Hooks
 
-Reactive hooks (background `run-shell -b` unless noted):
+Reactive hooks, dispatched with `if-shell -b <command> ''` so a handler that
+fails is never printed into a pane:
 
 - `after-split-window` — scan the new pane only (`work scan --pane`)
 - `after-new-window` — scan new pane, optional repo picker, ensure sidebar
@@ -94,7 +95,12 @@ Reactive hooks (background `run-shell -b` unless noted):
 - `session-closed` — archive workspace
 - `pane-title-changed` — feed title changes to status adapters (tmux 3.5+)
 - `client-attached` — reconcile after restore; repair dead sidebar panes
+- `client-resized` — restore sidebar widths after a display change
 - `session-created` — opt-in auto-track (when `auto-track` config is true)
+
+`pane-title-changed` and `client-resized` fire in bursts, so their hooks only
+record the event and return; a single detached worker coalesces the burst and
+runs `work` serially. Nothing spawns a `work` process per event.
 
 ## Repo picker on new window
 

@@ -41,11 +41,17 @@ run "bash /path/to/tmux-tmuxr/tmux-tmuxr.tmux"
 
 ```bash
 bash scripts/check.sh
+bash scripts/test-hooks.sh
 pre-commit run --all-files   # when hooks installed
 ```
 
 `scripts/check.sh` runs `bash -n`, `shellcheck`, and verifies executable bits on
 `tmux-tmuxr.tmux` and `scripts/*.sh`.
+
+`scripts/test-hooks.sh` starts private tmux servers (it never touches your own
+sessions) and asserts that a failing background hook is never surfaced to a
+client, that containment holds when the tmux server runs out of file
+descriptors, and that hook bursts collapse into a single serialised worker.
 
 ## Version control
 
