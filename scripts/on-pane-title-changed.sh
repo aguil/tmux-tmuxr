@@ -14,9 +14,23 @@ SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=coalesce-common.sh
 source "$SCRIPTS_DIR/coalesce-common.sh"
 
-RUNTIME_DIR="$(tmuxr_runtime_dir)"
+RUNTIME_DIR="$(tmuxr_runtime_dir)" || exit 0
 QUEUE_DIR="$RUNTIME_DIR/tmuxr-title-queue"
 LOCK_DIR="$RUNTIME_DIR/tmuxr-title-worker.lock"
+
+# Queue entries are named after the pane. Everything else in the directory is
+# left alone, so a directory that turned out not to be ours cannot be emptied
+# by this script.
+is_queue_entry() { [[ "$1" =~ ^%[0-9]+$ ]]; }
+
+queue_has_entries() {
+  local pane_file
+  for pane_file in "$QUEUE_DIR"/*; do
+    [[ -e "$pane_file" ]] || continue
+    is_queue_entry "$(basename "$pane_file")" && return 0
+  done
+  return 1
+}
 
 drain_queue() {
   local work_bin pane_file pane_id
@@ -26,7 +40,11 @@ drain_queue() {
 
   work_bin=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
   if [[ -z "$work_bin" ]]; then
-    rm -f "$QUEUE_DIR"/* 2>/dev/null || true
+    for pane_file in "$QUEUE_DIR"/*; do
+      pane_id="$(basename "$pane_file")"
+      is_queue_entry "$pane_id" || continue
+      rm -f "$pane_file" 2>/dev/null || true
+    done
     tmuxr_lock_release "$LOCK_DIR"
     return 0
   fi
@@ -38,6 +56,7 @@ drain_queue() {
     for pane_file in "$QUEUE_DIR"/*; do
       [[ -e "$pane_file" ]] || continue
       pane_id="$(basename "$pane_file")"
+      is_queue_entry "$pane_id" || continue
       rm -f "$pane_file" 2>/dev/null || true
       drained=1
       "${work_cmd[@]}" agent title-changed "$pane_id" --quiet >/dev/null 2>&1 || true
@@ -49,7 +68,7 @@ drain_queue() {
     tmuxr_lock_release "$LOCK_DIR"
     # An event enqueued between the last scan and the release would otherwise
     # sit in the queue until the next title change; pick it up now.
-    if compgen -G "$QUEUE_DIR/*" >/dev/null 2>&1 && tmuxr_lock_acquire "$LOCK_DIR"; then
+    if queue_has_entries && tmuxr_lock_acquire "$LOCK_DIR"; then
       continue
     fi
     return 0
@@ -66,7 +85,7 @@ PANE_ID="${1:-}"
 # create under the queue directory.
 [[ "$PANE_ID" =~ ^%[0-9]+$ ]] || exit 0
 
-mkdir -p "$QUEUE_DIR" 2>/dev/null || exit 0
+tmuxr_ensure_state_dir "$QUEUE_DIR" >/dev/null || exit 0
 : >"$QUEUE_DIR/$PANE_ID" 2>/dev/null || exit 0
 
 if tmuxr_lock_acquire "$LOCK_DIR"; then

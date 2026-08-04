@@ -9,9 +9,46 @@
 # server runs out of descriptors, and tmux fails the job before the hook's shell
 # ever runs (`|| true` cannot catch that). See issue #15.
 
+# A directory is safe to keep dispatcher state in only if it is a real
+# directory (not a symlink), owned by this user, and not writable by group or
+# other.
+tmuxr_dir_is_private() {
+  local dir="$1"
+
+  [[ -d "$dir" && ! -L "$dir" && -O "$dir" ]] || return 1
+  [[ -z "$(find "$dir" -maxdepth 0 \( -perm -g+w -o -perm -o+w \) 2>/dev/null)" ]]
+}
+
+# Print the runtime directory, or fail if it cannot be trusted.
+#
+# XDG_RUNTIME_DIR is normally a per-user 0700 directory, but the /tmp fallback
+# sits in a world-writable place. Without these checks another local user could
+# pre-create it and plant a symlink where the queue goes, so that this plugin's
+# own cleanup deletes files in a directory of the attacker's choosing. Callers
+# must treat a non-zero return as "do nothing".
 tmuxr_runtime_dir() {
-  local dir="${XDG_RUNTIME_DIR:-/tmp/work-$(id -u)}/work"
-  mkdir -p "$dir" 2>/dev/null || true
+  local base="${XDG_RUNTIME_DIR:-/tmp/work-$(id -u)}"
+  local dir="$base/work"
+
+  # Create the directory itself with its mode set, rather than chmod-ing after:
+  # a create-then-chmod leaves a window in which it is world-writable.
+  mkdir -p "${base%/*}" 2>/dev/null || true
+  mkdir -m 700 "$base" 2>/dev/null || true
+  tmuxr_dir_is_private "$base" || return 1
+
+  mkdir -m 700 "$dir" 2>/dev/null || true
+  tmuxr_dir_is_private "$dir" || return 1
+
+  printf '%s\n' "$dir"
+}
+
+# Create a state subdirectory under the runtime directory, refusing a planted
+# symlink in its place.
+tmuxr_ensure_state_dir() {
+  local dir="$1"
+
+  mkdir -m 700 "$dir" 2>/dev/null || true
+  tmuxr_dir_is_private "$dir" || return 1
   printf '%s\n' "$dir"
 }
 

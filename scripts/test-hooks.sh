@@ -253,6 +253,56 @@ else
   fail "expected a trailing debounce (<=3 passes), got $passes — resizing per tick"
 fi
 
+# --- 8. dispatcher state directories are not attacker-plantable ---------------
+# The /tmp fallback used when XDG_RUNTIME_DIR is unset is world-writable, so
+# another local user can pre-create it. The dispatchers must refuse anything
+# they do not exclusively own rather than deleting through a planted symlink.
+
+printf 'dispatchers refuse untrusted runtime state\n'
+start_server
+
+VICTIM="$TMPROOT/victim"
+mkdir -p "$VICTIM"
+: >"$VICTIM/precious"
+
+HOSTILE="$TMPROOT/hostile"
+mkdir -p "$HOSTILE/work"
+ln -s "$VICTIM" "$HOSTILE/work/tmuxr-title-queue"
+
+XDG_RUNTIME_DIR="$HOSTILE" bash "$SCRIPTS_DIR/on-pane-title-changed.sh" %0 >/dev/null 2>&1
+# Checked before the drain runs: the ownership gate must stop the dispatcher
+# from writing through the symlink in the first place.
+if [[ ! -e "$VICTIM/%0" ]]; then
+  ok "a symlinked queue directory was never written through"
+else
+  fail "dispatcher enqueued through a planted queue symlink"
+fi
+
+# Second layer: even handed a directory full of foreign files, the drain only
+# removes entries named like pane ids.
+XDG_RUNTIME_DIR="$HOSTILE" bash "$SCRIPTS_DIR/on-pane-title-changed.sh" --drain >/dev/null 2>&1
+sleep 0.5
+if [[ -e "$VICTIM/precious" ]]; then
+  ok "the drain left files that are not queue entries alone"
+else
+  fail "drain deleted a file that was not a queue entry"
+fi
+
+WORLD="$TMPROOT/world"
+mkdir -p "$WORLD/work"
+chmod 777 "$WORLD/work"
+: >"$WORLD/work/canary"
+XDG_RUNTIME_DIR="$WORLD" bash "$SCRIPTS_DIR/resize-sidebars.sh" >/dev/null 2>&1
+# Checked synchronously: the dispatcher creates its pending marker and lock
+# before it returns, and its worker would clear them moments later.
+entries=$(find "$WORLD/work" -mindepth 1 -maxdepth 1 -exec basename {} \; 2>/dev/null |
+  sort | tr '\n' ' ')
+if [[ "$entries" == "canary " ]]; then
+  ok "a world-writable runtime directory was refused"
+else
+  fail "dispatcher wrote into a world-writable runtime directory: $entries"
+fi
+
 printf '\n'
 if (( FAILURES == 0 )); then
   printf 'hook tests OK\n'

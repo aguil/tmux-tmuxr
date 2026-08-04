@@ -17,7 +17,7 @@ source "$SCRIPTS_DIR/coalesce-common.sh"
 # shellcheck source=sidebar-common.sh
 source "$SCRIPTS_DIR/sidebar-common.sh"
 
-RUNTIME_DIR="$(tmuxr_runtime_dir)"
+RUNTIME_DIR="$(tmuxr_runtime_dir)" || exit 0
 PENDING_FILE="$RUNTIME_DIR/tmuxr-resize-sidebars.pending"
 LOCK_DIR="$RUNTIME_DIR/tmuxr-resize-sidebars.lock"
 DEBOUNCE_SECONDS=0.15
