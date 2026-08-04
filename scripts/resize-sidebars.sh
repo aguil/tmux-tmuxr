@@ -21,15 +21,30 @@ RUNTIME_DIR="$(tmuxr_runtime_dir)"
 PENDING_FILE="$RUNTIME_DIR/tmuxr-resize-sidebars.pending"
 LOCK_DIR="$RUNTIME_DIR/tmuxr-resize-sidebars.lock"
 DEBOUNCE_SECONDS=0.15
+# Cap on consecutive deferrals, so an unbroken event stream still converges
+# instead of starving the resize entirely.
+MAX_DEFERRED_WINDOWS=12
 
 drain_pending() {
+  local deferred=0
+
   tmuxr_lock_claim "$LOCK_DIR"
 
   while :; do
-    # Clear before resizing: events arriving during the pass re-mark the file,
-    # so the final window size always gets a pass of its own.
+    # Clear before waiting: events arriving from here on re-mark the file, so
+    # the final window size always gets a pass of its own.
     rm -f "$PENDING_FILE" 2>/dev/null || true
     sleep "$DEBOUNCE_SECONDS"
+
+    # Trailing debounce. While a drag is still emitting events, restart the
+    # quiet window rather than resizing on every tick -- intermediate passes
+    # scan every pane on the server and are superseded moments later.
+    if [[ -e "$PENDING_FILE" ]] && (( deferred < MAX_DEFERRED_WINDOWS )); then
+      deferred=$((deferred + 1))
+      continue
+    fi
+    deferred=0
+
     work_resize_all_sidebars
 
     if [[ -e "$PENDING_FILE" ]]; then

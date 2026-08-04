@@ -45,6 +45,8 @@ start_server() {
   SERVER_N=$((SERVER_N + 1))
   SOCKET="${2:-tmuxr-t$$-$SERVER_N}"
   SOCKETS+=("$SOCKET")
+  tmux -L "$SOCKET" kill-server 2>/dev/null
+  sleep 0.2
   if [[ -n "$nofile" ]]; then
     bash -c "ulimit -n $nofile 2>/dev/null; exec tmux -L '$SOCKET' -f /dev/null new-session -d -s t 'sleep 600'"
   else
@@ -202,6 +204,34 @@ else
   fail "expected at most 1 drain worker, observed $workers concurrently"
 fi
 sleep 1
+
+# --- 7. the resize debounce is trailing, not periodic -------------------------
+# A drag emits events continuously. Each resize pass scans every pane on the
+# server, so passes taken mid-drag are wasted work superseded moments later.
+
+printf 'client-resized debounce is trailing\n'
+start_server "" default
+tmux_test set-environment -g WORK_BIN /bin/true
+tmux_test set-environment -g TMUXR_SIDEBAR_WIDTH 40
+
+# Sustain events for well over a debounce window, the way a drag does.
+burst_end=$((SECONDS + 2))
+while (( SECONDS < burst_end )); do
+  bash "$SCRIPTS_DIR/resize-sidebars.sh" >/dev/null 2>&1
+  sleep 0.05
+done
+sleep 1
+
+# Each pass runs one server-wide `list-panes -a`, which the server logs.
+passes=$(tmux_test show-messages 2>/dev/null | grep -c 'list-panes -a')
+passes=${passes:-0}
+if (( passes >= 1 && passes <= 3 )); then
+  ok "a 2s event stream produced $passes resize pass(es)"
+elif (( passes == 0 )); then
+  fail "no resize pass ran at all after the burst went quiet"
+else
+  fail "expected a trailing debounce (<=3 passes), got $passes — resizing per tick"
+fi
 
 printf '\n'
 if (( FAILURES == 0 )); then
