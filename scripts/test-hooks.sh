@@ -22,12 +22,13 @@ export XDG_RUNTIME_DIR="$TMPROOT"
 FAILURES=0
 SERVER_N=0
 SOCKET=""
+SOCKETS=()
 
 # shellcheck disable=SC2317,SC2329  # invoked via trap; codes differ by version
 cleanup() {
-  local n
-  for (( n = 0; n <= SERVER_N; n++ )); do
-    tmux -L "tmuxr-t$$-$n" kill-server 2>/dev/null
+  local name
+  for name in "${SOCKETS[@]+"${SOCKETS[@]}"}"; do
+    tmux -L "$name" kill-server 2>/dev/null
   done
   rm -rf "$TMPROOT"
 }
@@ -37,11 +38,13 @@ tmux_test() { tmux -L "$SOCKET" "$@"; }
 
 # Each case gets its own server on its own socket: a case that deliberately
 # starves the server of descriptors must not leave the next one racing a
-# half-dead one.
+# half-dead one. Pass a socket name to override, e.g. "default" for a case whose
+# code under test invokes bare `tmux`.
 start_server() {
   local nofile="${1:-}"
   SERVER_N=$((SERVER_N + 1))
-  SOCKET="tmuxr-t$$-$SERVER_N"
+  SOCKET="${2:-tmuxr-t$$-$SERVER_N}"
+  SOCKETS+=("$SOCKET")
   if [[ -n "$nofile" ]]; then
     bash -c "ulimit -n $nofile 2>/dev/null; exec tmux -L '$SOCKET' -f /dev/null new-session -d -s t 'sleep 600'"
   else
@@ -166,15 +169,37 @@ fi
 # --- 6. the resize dispatcher is single-flight --------------------------------
 
 printf 'client-resized dispatcher is single-flight\n'
-start_server
+# The dispatcher and its worker invoke bare `tmux`, which resolves to the
+# default socket under TMUX_TMPDIR -- so this case puts its server there and
+# populates the environment work_resize_all_sidebars reads. Otherwise the worker
+# reaches no server, returns immediately, and the assertion below measures
+# nothing.
+start_server "" default
+tmux_test set-environment -g WORK_BIN /bin/true
+tmux_test set-environment -g TMUXR_SIDEBAR_WIDTH 40
+
+# Sample during the burst, not after: a worker that has already exited is
+# indistinguishable from one that never spawned.
+(
+  for _ in $(seq 1 40); do
+    n=$(pgrep -fc "resize-sidebars[.]sh --drain" 2>/dev/null)
+    printf '%s\n' "${n:-0}"
+    sleep 0.05
+  done >"$TMPROOT/workers.log"
+) &
+sampler=$!
 for i in $(seq 1 40); do
   bash "$SCRIPTS_DIR/resize-sidebars.sh" >/dev/null 2>&1
 done
-workers=$(pgrep -f "resize-sidebars.sh --drain" 2>/dev/null | wc -l | tr -d ' ')
-if (( workers <= 1 )); then
-  ok "40 resize events produced $workers drain worker(s)"
+wait "$sampler"
+workers=$(sort -n "$TMPROOT/workers.log" | tail -1)
+
+if (( workers == 1 )); then
+  ok "40 resize events were served by exactly 1 drain worker"
+elif (( workers == 0 )); then
+  fail "no drain worker ever ran — the dispatcher never spawned one"
 else
-  fail "expected at most 1 drain worker, found $workers"
+  fail "expected at most 1 drain worker, observed $workers concurrently"
 fi
 sleep 1
 
