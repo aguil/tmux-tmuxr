@@ -17,7 +17,7 @@ FAILURES=0
 SERVER_N=0
 SOCKET=""
 
-# shellcheck disable=SC2329  # invoked via trap
+# shellcheck disable=SC2317,SC2329  # invoked via trap; codes differ by version
 cleanup() {
   local n
   for (( n = 0; n <= SERVER_N; n++ )); do
