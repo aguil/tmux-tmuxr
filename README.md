@@ -161,9 +161,15 @@ every `source-file` unless you guard it. Prefer a theme that exposes segments.
 > run-shell "bash ~/.tmux/plugins/tmux-tmuxr/scripts/append-status.sh"
 > ```
 >
-> The segment no longer appears until you add one of the lines above. Leftover
-> injections written into tmux options by those versions are stripped once,
-> automatically, on first load after upgrading.
+> The segment no longer appears until you add one of the lines above.
+>
+> On first load after upgrading, a one-time cleanup strips the `#()` calls those
+> versions injected into `status-right` and the window formats. It does **not**
+> undo the wholesale rewrite of `window-status-format` /
+> `window-status-current-format`, which those versions replaced with hardcoded
+> Tokyo Night strings — that content is theme-owned, and your theme reasserts it
+> the next time it loads. If your window tabs look wrong after upgrading, reload
+> your theme; the cleanup runs once and will not retry.
 
 ## tmux-resurrect
 
