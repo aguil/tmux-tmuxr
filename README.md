@@ -2,8 +2,7 @@
 
 TPM plugin inspired by [herdr](https://herdr.dev) for tmux-native agent
 workspaces. Companion to [work](https://github.com/aguil/work) — sets tmux
-hooks, keybindings, and status-line integration; starts `workd` and manages
-sidebar panes.
+hooks and keybindings; starts `workd` and manages sidebar panes.
 
 ## Requirements
 
@@ -120,15 +119,57 @@ restore when that plugin is installed.
 
 ## Status line
 
-Agent counts can be prepended to `status-right`. After TPM install, the plugin
-lives under `~/.tmux/plugins/tmux-tmuxr/`:
+`scripts/status.sh` prints agent counts as a short string. The plugin does not
+write status-line options — whatever owns your status line owns those — so add
+it to your config yourself. After TPM install the plugin lives under
+`~/.tmux/plugins/tmux-tmuxr/`.
+
+**If nothing else owns `status-right`** (no theme plugin, or one you have
+already told not to set it), assign it directly:
 
 ```tmux
-run-shell "bash ~/.tmux/plugins/tmux-tmuxr/scripts/append-status.sh"
+set -g status-right '#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh) '
 ```
 
-Or call `append-status.sh` from a chezmoi-managed `~/.tmux.conf` after other
-theme plugins load (idempotent).
+**If a theme owns `status-right`, do not use the line above** — `set -g`
+replaces the whole option, so the theme's own segments disappear. Use the
+theme's segment mechanism instead. [tmux-powerkit](https://github.com/fabioluciano/tmux-tokyo-night)
+takes an inline external segment with a TTL, so the script runs once per
+interval rather than on every redraw:
+
+```tmux
+set -g @powerkit_plugins "external(\"󰚩\"|\"#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh)\"|\"secondary\"|\"active\"|\"5\"),datetime"
+```
+
+Themes with no segment mechanism at all — `janoamaral/tokyo-night-tmux`, for
+one — leave no composition-safe option: `status-right` is a single global with
+no merge protocol, which is why this plugin stopped writing it. Appending to
+whatever the theme set is possible from your own config, but it re-prepends on
+every `source-file` unless you guard it. Prefer a theme that exposes segments.
+
+> **Changed in 0.2.0 — action required.** Earlier versions injected this segment
+> automatically via `scripts/append-status.sh` and rewrote `window-status-format`
+> from a hardcoded Tokyo Night palette. Both scripts are gone: they only worked
+> against one theme and silently rendered nothing against themes that build
+> `status-format[0]`.
+>
+> **Remove this line from your `~/.tmux.conf` before reloading** — earlier
+> versions of this README told you to add it, and it now points at a deleted
+> script, so tmux reports an error on every `source-file`:
+>
+> ```tmux
+> run-shell "bash ~/.tmux/plugins/tmux-tmuxr/scripts/append-status.sh"
+> ```
+>
+> The segment no longer appears until you add one of the lines above.
+>
+> On first load after upgrading, a one-time cleanup strips the `#()` calls those
+> versions injected into `status-right` and the window formats. It does **not**
+> undo the wholesale rewrite of `window-status-format` /
+> `window-status-current-format`, which those versions replaced with hardcoded
+> Tokyo Night strings — that content is theme-owned, and your theme reasserts it
+> the next time it loads. If your window tabs look wrong after upgrading, reload
+> your theme; the cleanup runs once and will not retry.
 
 ## tmux-resurrect
 
