@@ -2,3 +2,4 @@
 .review-agent/
 .agents-code-review/
 .agents-triage/
+.claude/settings.local.json
