@@ -137,12 +137,23 @@ instead of on every redraw:
 set -g @powerkit_plugins "external(\"󰚩\"|\"#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh)\"|\"secondary\"|\"active\"|\"5\"),datetime"
 ```
 
-> **Changed in 0.2.0.** Earlier versions injected this segment automatically via
-> `scripts/append-status.sh` and rewrote `window-status-format` from a hardcoded
-> Tokyo Night palette. Both scripts are gone: they only worked against one theme
-> and silently rendered nothing against themes that build `status-format[0]`.
+> **Changed in 0.2.0 — action required.** Earlier versions injected this segment
+> automatically via `scripts/append-status.sh` and rewrote `window-status-format`
+> from a hardcoded Tokyo Night palette. Both scripts are gone: they only worked
+> against one theme and silently rendered nothing against themes that build
+> `status-format[0]`.
+>
+> **Remove this line from your `~/.tmux.conf` before reloading** — earlier
+> versions of this README told you to add it, and it now points at a deleted
+> script, so tmux reports an error on every `source-file`:
+>
+> ```tmux
+> run-shell "bash ~/.tmux/plugins/tmux-tmuxr/scripts/append-status.sh"
+> ```
+>
 > The segment no longer appears until you add one of the lines above. Leftover
-> injections are stripped once, automatically, on first load after upgrading.
+> injections written into tmux options by those versions are stripped once,
+> automatically, on first load after upgrading.
 
 ## tmux-resurrect
 
