@@ -120,15 +120,29 @@ restore when that plugin is installed.
 
 ## Status line
 
-Agent counts can be prepended to `status-right`. After TPM install, the plugin
-lives under `~/.tmux/plugins/tmux-tmuxr/`:
+`scripts/status.sh` prints agent counts as a short string. The plugin does not
+write status-line options — your theme owns those — so add it to your config
+yourself. After TPM install the plugin lives under `~/.tmux/plugins/tmux-tmuxr/`:
 
 ```tmux
-run-shell "bash ~/.tmux/plugins/tmux-tmuxr/scripts/append-status.sh"
+set -g status-right '#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh) '
 ```
 
-Or call `append-status.sh` from a chezmoi-managed `~/.tmux.conf` after other
-theme plugins load (idempotent).
+Themes that compose the status line themselves can consume it as a segment.
+[tmux-powerkit](https://github.com/fabioluciano/tmux-tokyo-night) takes an
+inline external segment with a TTL, so the script runs once per interval
+instead of on every redraw:
+
+```tmux
+set -g @powerkit_plugins "external(\"󰚩\"|\"#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh)\"|\"secondary\"|\"active\"|\"5\"),datetime"
+```
+
+> **Changed in 0.2.0.** Earlier versions injected this segment automatically via
+> `scripts/append-status.sh` and rewrote `window-status-format` from a hardcoded
+> Tokyo Night palette. Both scripts are gone: they only worked against one theme
+> and silently rendered nothing against themes that build `status-format[0]`.
+> The segment no longer appears until you add one of the lines above. Leftover
+> injections are stripped once, automatically, on first load after upgrading.
 
 ## tmux-resurrect
 

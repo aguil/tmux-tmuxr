@@ -78,7 +78,7 @@ tmux set-hook -g session-closed \
 
 # Reconcile on client attach (replace hook on reload; clears legacy attach pickers)
 tmux set-hook -g client-attached \
-    "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{hook_session}; bash \"$SCRIPTS_DIR/restore-window-format.sh\" 2>/dev/null || true; $WORK reconcile --all --quiet 2>/dev/null || true'"
+    "run-shell -b 'bash \"$SCRIPTS_DIR/on-client-attached.sh\" #{hook_session}; $WORK reconcile --all --quiet 2>/dev/null || true'"
 
 # Restore sidebar width after terminal/display resize (e.g. disconnect external monitor)
 tmux set-hook -g client-resized \
@@ -108,8 +108,9 @@ tmux bind-key S run-shell "bash '$SCRIPTS_DIR/track-session.sh'"
 # Create sidebar in all existing windows if not already present
 bash "$SCRIPTS_DIR/ensure-all-sidebars.sh" &
 
-# --- Status-line integration ---
-# Users can add this to their status-right:
-#   set -g status-right '#($SCRIPTS_DIR/status.sh)'
+# --- Status line ---
+# tmuxr does not write status-line options; the theme owns them. Users wire
+# scripts/status.sh into their own config. See README.md ("Status line").
 
-bash "$SCRIPTS_DIR/restore-window-format.sh"
+# Temporary: strip injections left by <= 0.1.3. Runs once per machine.
+bash "$SCRIPTS_DIR/cleanup-status-injections.sh" 2>/dev/null || true
