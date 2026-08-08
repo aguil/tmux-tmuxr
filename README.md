@@ -120,21 +120,32 @@ restore when that plugin is installed.
 ## Status line
 
 `scripts/status.sh` prints agent counts as a short string. The plugin does not
-write status-line options — your theme owns those — so add it to your config
-yourself. After TPM install the plugin lives under `~/.tmux/plugins/tmux-tmuxr/`:
+write status-line options — whatever owns your status line owns those — so add
+it to your config yourself. After TPM install the plugin lives under
+`~/.tmux/plugins/tmux-tmuxr/`.
+
+**If nothing else owns `status-right`** (no theme plugin, or one you have
+already told not to set it), assign it directly:
 
 ```tmux
 set -g status-right '#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh) '
 ```
 
-Themes that compose the status line themselves can consume it as a segment.
-[tmux-powerkit](https://github.com/fabioluciano/tmux-tokyo-night) takes an
-inline external segment with a TTL, so the script runs once per interval
-instead of on every redraw:
+**If a theme owns `status-right`, do not use the line above** — `set -g`
+replaces the whole option, so the theme's own segments disappear. Use the
+theme's segment mechanism instead. [tmux-powerkit](https://github.com/fabioluciano/tmux-tokyo-night)
+takes an inline external segment with a TTL, so the script runs once per
+interval rather than on every redraw:
 
 ```tmux
 set -g @powerkit_plugins "external(\"󰚩\"|\"#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh)\"|\"secondary\"|\"active\"|\"5\"),datetime"
 ```
+
+Themes with no segment mechanism at all — `janoamaral/tokyo-night-tmux`, for
+one — leave no composition-safe option: `status-right` is a single global with
+no merge protocol, which is why this plugin stopped writing it. Appending to
+whatever the theme set is possible from your own config, but it re-prepends on
+every `source-file` unless you guard it. Prefer a theme that exposes segments.
 
 > **Changed in 0.2.0 — action required.** Earlier versions injected this segment
 > automatically via `scripts/append-status.sh` and rewrote `window-status-format`
