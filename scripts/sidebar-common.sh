@@ -132,7 +132,10 @@ work_ensure_sidebar_windows() {
 
   while IFS= read -r window_target; do
     [[ -z "$window_target" || "$window_target" == "$active_window" ]] && continue
-    bash "$(sidebar_common_dir)/ensure-sidebar.sh" "$window_target" 2>/dev/null &
+    # Detached: a background child that keeps the tmux job's descriptors open
+    # holds them on the tmux server for as long as it runs.
+    nohup bash "$(sidebar_common_dir)/ensure-sidebar.sh" "$window_target" \
+      </dev/null >/dev/null 2>&1 &
   done < <(
     tmux list-windows -t "$session" -F '#{session_name}:#{window_index}' 2>/dev/null || true
   )
@@ -146,7 +149,9 @@ work_resize_all_sidebars() {
     return 0
   fi
 
-  work_refresh_sidebar_config_cache
+  # Read the width from the cached tmux environment. Refreshing it here would
+  # spawn `work config get` (Node) on every client-resized event; callers that
+  # can observe a config change refresh the cache themselves.
   target_width=$(work_sidebar_config_width)
   min_main=40
   min_sidebar=24
@@ -189,6 +194,8 @@ work_repair_session_sidebars() {
     return 0
   fi
 
+  work_refresh_sidebar_config_cache
+
   if ! work_sidebar_visible "$session"; then
     work_kill_session_sidebars "$session"
     return 0
@@ -218,6 +225,8 @@ work_ensure_session_sidebars() {
   if ! work_session_tracked "$session"; then
     return 0
   fi
+
+  work_refresh_sidebar_config_cache
 
   if ! work_sidebar_visible "$session"; then
     return 0

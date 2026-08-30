@@ -19,10 +19,11 @@ cd ../work && npm run build
 tmux source-file ~/.tmux.conf
 ```
 
-Validate shell scripts:
+Validate shell scripts and hook behaviour:
 
 ```bash
-bash scripts/check.sh
+bash scripts/check.sh       # bash -n, shellcheck, executable bits
+bash scripts/test-hooks.sh  # hook containment + coalescing, private tmux server
 ```
 
 Before committing markdown: `pre-commit run --all-files` (when hooks installed).
@@ -54,6 +55,14 @@ simple`). First bootstrap: tag `v0.1.0` on `main` after merge. See
 
 ## Conventions
 
-- Hooks use `run-shell -b`; lifecycle hooks use `set-hook -g` (replace on plugin reload, non-blocking)
+- Hooks dispatch with `if-shell -b '<command>' ''`, never `run-shell -b`: a
+  failing background `run-shell` job is dumped into the current pane and forces
+  it into view mode, and `|| true` cannot prevent it (tmux's job child exits 1
+  on its own when the server is out of descriptors). `if-shell` reads the status
+  to pick a branch and prints nothing. See `scripts/test-hooks.sh` and issue #15.
+- High-frequency hooks (`pane-title-changed`, `client-resized`) must return
+  immediately and hand work to one detached worker via `scripts/coalesce-common.sh`;
+  never run `work` (Node) inline in a hook
+- Lifecycle hooks use `set-hook -g` (replace on plugin reload, non-blocking)
 - Sidebar panes marked with `-sidebar 1`
 - Uppercase `W` / `S` bindings (lowercase `w` is tmux choose-tree)
