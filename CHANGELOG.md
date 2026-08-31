@@ -9,6 +9,34 @@ Entries from the next release onward are updated by
 [release-please](https://github.com/googleapis/release-please) when the release
 PR merges. See [CONTRIBUTING.md](./CONTRIBUTING.md#releasing).
 
+## [0.2.0](https://github.com/aguil/tmux-tmuxr/compare/v0.1.3...v0.2.0) (2026-08-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* **status:** the agent-counts status segment is no longer injected automatically. Add scripts/status.sh to your own tmux config to restore it; see the "Status line" section of README.md.
+
+### Added
+
+* **status:** drop status-line participation ([03ff7c8](https://github.com/aguil/tmux-tmuxr/commit/03ff7c8f01409053537506f1440441ea4f03071d))
+
+
+### Fixed
+
+* **ci:** count resize passes with a tmux shim, not show-messages ([f9b6b73](https://github.com/aguil/tmux-tmuxr/commit/f9b6b7344f0c37d9c6ff498b6eda4b84b247c53b))
+* **ci:** silence SC2317 on the trap-invoked test cleanup ([ebefd27](https://github.com/aguil/tmux-tmuxr/commit/ebefd274b1ac82d09e2a044a07ea9ec33b5c114f))
+* **hooks:** contain background hook failures with if-shell ([547c59e](https://github.com/aguil/tmux-tmuxr/commit/547c59e0c2b771fd88579edeea6e28274387b760)), closes [#15](https://github.com/aguil/tmux-tmuxr/issues/15)
+* **hooks:** contain background tmux hook failures with if-shell ([d55eb35](https://github.com/aguil/tmux-tmuxr/commit/d55eb35a205292e5d77fc1c7b842cd161985180e))
+* **security:** refuse dispatcher state directories we do not own ([ce7ad31](https://github.com/aguil/tmux-tmuxr/commit/ce7ad31d74ea562064c7769b1c96fdf0a19ea721))
+* **sidebar:** test [@work-workspace](https://github.com/work-workspace) value, not show-option status ([59be3f6](https://github.com/aguil/tmux-tmuxr/commit/59be3f6444ebe948c2af6cc77e405b61fae94718))
+* silence missing workspace option messages ([bb6cafc](https://github.com/aguil/tmux-tmuxr/commit/bb6cafc906876b36366af3134a5d1b92194aae0a))
+* silence untracked workspace lookup ([504506a](https://github.com/aguil/tmux-tmuxr/commit/504506a15cd031d703b2d231da0126fa35615874))
+
+
+### Performance
+
+* **hooks:** make the resize debounce trailing again ([8baa91f](https://github.com/aguil/tmux-tmuxr/commit/8baa91f6dc507967c5c7427f931032546a4c3420))
+
 ## [0.1.3](https://github.com/aguil/tmux-tmuxr/compare/v0.1.2...v0.1.3) (2026-07-13)
 
 
