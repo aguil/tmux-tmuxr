@@ -9,6 +9,15 @@ Entries from the next release onward are updated by
 [release-please](https://github.com/googleapis/release-please) when the release
 PR merges. See [CONTRIBUTING.md](./CONTRIBUTING.md#releasing).
 
+## [0.2.1](https://github.com/aguil/tmux-tmuxr/compare/v0.2.0...v0.2.1) (2026-08-31)
+
+
+### Fixed
+
+* **release:** bump VERSION on release ([1646040](https://github.com/aguil/tmux-tmuxr/commit/1646040f7b27b44fb37836ad5fdac838ac57ad1f))
+* **release:** point release-please at the VERSION file ([db2e398](https://github.com/aguil/tmux-tmuxr/commit/db2e398bc3a3774c386e3f6e0f6af401e4936076))
+* sync VERSION with the released 0.2.0 ([265fc8c](https://github.com/aguil/tmux-tmuxr/commit/265fc8c2ba2ad72244e0aefedfe9e738a605fb1c))
+
 ## [0.2.0](https://github.com/aguil/tmux-tmuxr/compare/v0.1.3...v0.2.0) (2026-08-30)
 
 
