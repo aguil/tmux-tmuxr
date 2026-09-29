@@ -52,7 +52,11 @@ fi
 SIDEBAR_WIDTH=$(work_sidebar_config_width)
 SIDEBAR_POSITION=$(work_sidebar_config_position)
 
-split_args=(-h -l "$SIDEBAR_WIDTH" -t "$WINDOW_TARGET")
+# -f: span the full window height. Without it tmux splits only the active
+# pane, so in a multi-pane window (e.g. after a tmux-resurrect restore, which
+# strips sidebars from the save) the sidebar is as tall as that one pane and
+# the window's saved layout is lost.
+split_args=(-f -h -l "$SIDEBAR_WIDTH" -t "$WINDOW_TARGET")
 if [[ "$SIDEBAR_POSITION" == "left" ]]; then
   split_args+=(-b)
 fi
