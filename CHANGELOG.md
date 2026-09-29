@@ -9,6 +9,14 @@ Entries from the next release onward are updated by
 [release-please](https://github.com/googleapis/release-please) when the release
 PR merges. See [CONTRIBUTING.md](./CONTRIBUTING.md#releasing).
 
+## [0.2.2](https://github.com/aguil/tmux-tmuxr/compare/v0.2.1...v0.2.2) (2026-09-29)
+
+
+### Fixed
+
+* **resurrect:** repair pane lines shifted by an empty pane title ([ea3ea8a](https://github.com/aguil/tmux-tmuxr/commit/ea3ea8a2f8a740a218fe50c04d885421ee8aa070))
+* **resurrect:** repair pane lines shifted by an empty pane title ([e784aac](https://github.com/aguil/tmux-tmuxr/commit/e784aace02837c7adf728148e02666cd7a6d0bb7))
+
 ## [0.2.1](https://github.com/aguil/tmux-tmuxr/compare/v0.2.0...v0.2.1) (2026-08-31)
 
 
