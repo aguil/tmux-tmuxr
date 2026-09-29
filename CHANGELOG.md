@@ -9,6 +9,14 @@ Entries from the next release onward are updated by
 [release-please](https://github.com/googleapis/release-please) when the release
 PR merges. See [CONTRIBUTING.md](./CONTRIBUTING.md#releasing).
 
+## [0.2.3](https://github.com/aguil/tmux-tmuxr/compare/v0.2.2...v0.2.3) (2026-09-29)
+
+
+### Fixed
+
+* **sidebar:** split the full window height when creating a sidebar ([8a5636e](https://github.com/aguil/tmux-tmuxr/commit/8a5636e840bbb8f192f993311d39bbbeb274023b))
+* **sidebar:** split the full window height when creating a sidebar ([38c26f2](https://github.com/aguil/tmux-tmuxr/commit/38c26f21f0fe7ed7cf66d734bb901c6d634bc536))
+
 ## [0.2.2](https://github.com/aguil/tmux-tmuxr/compare/v0.2.1...v0.2.2) (2026-09-29)
 
 
