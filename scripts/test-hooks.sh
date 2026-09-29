@@ -303,6 +303,50 @@ else
   fail "dispatcher wrote into a world-writable runtime directory: $entries"
 fi
 
+# --- 9. sidebars wait for a restore to finish ---------------------------------
+# tmux-resurrect applies each window's saved layout after creating its panes.
+# A sidebar added mid-restore (after-new-window fires as soon as the window
+# exists) is laid into whatever cell its pane-list position lands on, and it
+# must be a full-height column once the restore is done.
+
+printf 'ensure-sidebar defers to a restore and spans the window\n'
+start_server "" default
+SIDEBAR_BIN="$TMPROOT/fake-sidebar"
+cat >"$SIDEBAR_BIN" <<'EOF'
+#!/usr/bin/env bash
+[[ "${1:-}" == "sidebar" ]] && exec sleep 600
+exit 1
+EOF
+chmod +x "$SIDEBAR_BIN"
+tmux_test set-environment -g WORK_BIN "$SIDEBAR_BIN"
+tmux_test set-environment -g TMUXR_SIDEBAR_WIDTH 40
+tmux_test set-option -t t @work-workspace test
+tmux_test split-window -v -t t:0 'sleep 600'
+tmux_test split-window -v -t t:0 'sleep 600'
+
+sidebar_panes() {
+  tmux_test list-panes -t t:0 -F '#{@work-sidebar}' | grep -c '^1$'
+}
+
+tmux_test set-option -gq @work-restoring 1
+bash "$SCRIPTS_DIR/ensure-sidebar.sh" t:0 >/dev/null 2>&1
+if [[ "$(sidebar_panes)" == "0" ]]; then
+  ok "no sidebar is created while @work-restoring is set"
+else
+  fail "ensure-sidebar created a sidebar during a restore"
+fi
+
+tmux_test set-option -gqu @work-restoring
+bash "$SCRIPTS_DIR/ensure-sidebar.sh" t:0 >/dev/null 2>&1
+window_height=$(tmux_test display-message -p -t t:0 '#{window_height}')
+sidebar_height=$(tmux_test list-panes -t t:0 -F '#{@work-sidebar} #{pane_height}' |
+  awk '$1 == "1" { print $2 }')
+if [[ "$(sidebar_panes)" == "1" && "$sidebar_height" == "$window_height" ]]; then
+  ok "after the restore the sidebar spans all $window_height rows"
+else
+  fail "expected one full-height sidebar, got $(sidebar_panes) of height '${sidebar_height}'/$window_height"
+fi
+
 printf '\n'
 if (( FAILURES == 0 )); then
   printf 'hook tests OK\n'

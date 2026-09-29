@@ -14,6 +14,16 @@ if [[ -z "$WINDOW_TARGET" ]]; then
   exit 0
 fi
 
+# Never create sidebars mid-restore. tmux-resurrect creates each window, then
+# splits its panes and applies the saved layout, which fills cells from the
+# pane list in order. after-new-window fires ensure-sidebar in the background
+# as soon as the window exists, so a sidebar created then takes whichever
+# cell its list position lands on. on-post-restore clears the flag and adds
+# the sidebars once every layout is in place.
+if [[ "$(tmux show-option -gqv @work-restoring 2>/dev/null || true)" == "1" ]]; then
+  exit 0
+fi
+
 WORK_BIN=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2-)
 if [[ -z "$WORK_BIN" ]]; then
   exit 0
