@@ -9,6 +9,14 @@ Entries from the next release onward are updated by
 [release-please](https://github.com/googleapis/release-please) when the release
 PR merges. See [CONTRIBUTING.md](./CONTRIBUTING.md#releasing).
 
+## [0.2.4](https://github.com/aguil/tmux-tmuxr/compare/v0.2.3...v0.2.4) (2026-09-29)
+
+
+### Fixed
+
+* **sidebar:** do not create sidebars while a restore is running ([78b6ef9](https://github.com/aguil/tmux-tmuxr/commit/78b6ef94f5ddfdcd685ada778a483164c0dff6fe))
+* **sidebar:** do not create sidebars while a restore is running ([b62ecaa](https://github.com/aguil/tmux-tmuxr/commit/b62ecaa0bd5ad342a2c8d16ed2fd31d081f949d4))
+
 ## [0.2.3](https://github.com/aguil/tmux-tmuxr/compare/v0.2.2...v0.2.3) (2026-09-29)
 
 
