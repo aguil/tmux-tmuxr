@@ -347,6 +347,72 @@ else
   fail "expected one full-height sidebar, got $(sidebar_panes) of height '${sidebar_height}'/$window_height"
 fi
 
+# --- 10. resurrect hooks do not wait on Node ----------------------------------
+# tmux-continuum starts restoring one second after it loads, and resurrect reads
+# pre-restore-all once, so the hook must be registered before the plugin spends
+# time in `work` startup, simulated here by a binary that never answers.
+
+printf 'resurrect hooks are registered before work is resolved\n'
+start_server "" default
+SLOW_WORK="$TMPROOT/slow-work"
+cat >"$SLOW_WORK" <<'EOF'
+#!/usr/bin/env bash
+exec sleep 30
+EOF
+chmod +x "$SLOW_WORK"
+tmux_test set-option -gq @work-bin "$SLOW_WORK"
+bash "$ROOT/tmux-tmuxr.tmux" >/dev/null 2>&1 &
+plugin=$!
+sleep 1
+registered=$(tmux_test show-option -gqv @resurrect-hook-pre-restore-all)
+kill "$plugin" 2>/dev/null
+wait "$plugin" 2>/dev/null
+if [[ "$registered" == *@work-restoring* ]]; then
+  ok "pre-restore-all is set while work is still starting"
+else
+  fail "pre-restore-all was not registered before the first Node call"
+fi
+
+# --- 11. the repo picker skips panes resurrect is restoring -------------------
+
+printf 'on-new-window skips restored panes when the flag was missed\n'
+start_server "" default
+PICKER_LOG="$TMPROOT/picker.log"
+PICKER_WORK="$TMPROOT/picker-work"
+cat >"$PICKER_WORK" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >>"$PICKER_LOG"
+case "\$*" in
+  "config get prompt-repos-on-new-window") echo true ;;
+  "config get repo-scan-dir") echo /tmp ;;
+esac
+EOF
+chmod +x "$PICKER_WORK"
+tmux_test set-environment -g WORK_BIN "$PICKER_WORK"
+
+CONTENTS="$TMPROOT/resurrect/restore/pane_contents"
+mkdir -p "$CONTENTS"
+: >"$CONTENTS/pane-t:1.0"
+restored=$(tmux_test new-window -d -t t:1 -P -F '#{pane_id}' \
+  "cat '$CONTENTS//pane-t:1.0'; exec sleep 600")
+plain=$(tmux_test new-window -d -t t:2 -P -F '#{pane_id}' 'sleep 600')
+
+: >"$PICKER_LOG"
+bash "$SCRIPTS_DIR/on-new-window.sh" t t:1 "$restored" >/dev/null 2>&1
+if ! grep -q '^repos ' "$PICKER_LOG"; then
+  ok "a pane running resurrect's pane-contents command gets no picker"
+else
+  fail "repo picker path ran for a restored pane"
+fi
+
+: >"$PICKER_LOG"
+bash "$SCRIPTS_DIR/on-new-window.sh" t t:2 "$plain" >/dev/null 2>&1
+if grep -q '^repos ' "$PICKER_LOG"; then
+  ok "an ordinary new window still reaches the picker"
+else
+  fail "the restored-pane check also suppressed an ordinary window"
+fi
+
 printf '\n'
 if (( FAILURES == 0 )); then
   printf 'hook tests OK\n'

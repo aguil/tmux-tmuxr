@@ -5,6 +5,17 @@
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$CURRENT_DIR/scripts"
 
+# Mark tmux-resurrect restores so new-window hooks do not prompt for repos
+# while saved sessions/windows are being recreated. This must stay ahead of every
+# Node call below: tmux-continuum starts the restore one second after it loads,
+# and resurrect reads pre-restore-all once, at the start. See issue #32.
+tmux set-option -gq @resurrect-hook-post-save-layout \
+    "bash \"$SCRIPTS_DIR/filter-resurrect-save.sh\""
+tmux set-option -gq @resurrect-hook-pre-restore-all \
+    "tmux set-option -gq @work-restoring 1; tmux set-option -gqu @work-restore-finished-at"
+tmux set-option -gq @resurrect-hook-post-restore-all \
+    "bash \"$SCRIPTS_DIR/on-post-restore.sh\""
+
 TMUXR_VERSION=""
 if [[ -f "$CURRENT_DIR/VERSION" ]]; then
     TMUXR_VERSION="$(tr -d '[:space:]' <"$CURRENT_DIR/VERSION")"
@@ -42,15 +53,6 @@ TMUXR_SIDEBAR_WIDTH=$($WORK config get sidebar-width 2>/dev/null || echo "40")
 TMUXR_SIDEBAR_POSITION=$($WORK config get sidebar-position 2>/dev/null || echo "right")
 tmux set-environment -g TMUXR_SIDEBAR_WIDTH "$TMUXR_SIDEBAR_WIDTH"
 tmux set-environment -g TMUXR_SIDEBAR_POSITION "$TMUXR_SIDEBAR_POSITION"
-
-# Mark tmux-resurrect restores so new-window hooks do not prompt for repos
-# while saved sessions/windows are being recreated.
-tmux set-option -gq @resurrect-hook-post-save-layout \
-    "bash \"$SCRIPTS_DIR/filter-resurrect-save.sh\""
-tmux set-option -gq @resurrect-hook-pre-restore-all \
-    "tmux set-option -gq @work-restoring 1; tmux set-option -gqu @work-restore-finished-at"
-tmux set-option -gq @resurrect-hook-post-restore-all \
-    "bash \"$SCRIPTS_DIR/on-post-restore.sh\""
 
 # --- Daemon lifecycle ---
 
