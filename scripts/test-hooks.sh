@@ -13,7 +13,9 @@ SCRIPTS_DIR="$ROOT/scripts"
 # the suite from inside a session would otherwise let the dispatchers under test
 # -- which invoke bare `tmux` -- reach the developer's own server and resize
 # their real sidebars. Isolation has to start by dropping the inherited session.
-unset TMUX TMUX_PANE
+# Inside a session TMUXR_SCRIPTS_DIR also points at the installed plugin, and
+# scripts that honour it would run that copy instead of this checkout.
+unset TMUX TMUX_PANE TMUXR_SCRIPTS_DIR
 
 TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/tmuxr-test.XXXXXX")"
 export TMUX_TMPDIR="$TMPROOT"
@@ -451,7 +453,12 @@ if [[ -z "$(tmux_test show-option -gqv @work-restoring)" &&
 else
   fail "restore flags were not updated inline"
 fi
-sleep 3
+# Wait for the worker to exit, not a fixed time: it outlives this case otherwise
+# and writes its remaining calls into the next case's log.
+for _ in $(seq 1 150); do
+  pgrep -f "on-post-restore[.]sh --repair" >/dev/null 2>&1 || break
+  sleep 0.1
+done
 if [[ "$(sidebar_panes)" == "1" ]]; then
   ok "the detached worker still repaired the sidebar"
 else
