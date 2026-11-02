@@ -458,6 +458,36 @@ else
   fail "expected 1 sidebar after detached repair, got $(sidebar_panes)"
 fi
 
+# --- 13. a repair pass does server-wide work once -----------------------------
+# Refreshing config spawns Node and resizing scans every pane, so per-session
+# repeats make a pass cost O(sessions x panes).
+
+printf 'repair-all-sidebars does per-pass work once\n'
+start_server "" default
+tmux_test set-environment -g WORK_BIN "$REPAIR_WORK"
+for s in a b c; do
+  tmux_test new-session -d -s "$s" 'sleep 600'
+  tmux_test set-option -t "$s" @work-workspace test
+done
+tmux_test set-option -t t @work-workspace test
+
+: >"$REPAIR_LOG"
+: >"$PASS_LOG"
+PATH="$SHIM_DIR:$PATH" REPAIR_DELAY=0 bash "$SCRIPTS_DIR/repair-all-sidebars.sh" >/dev/null 2>&1
+config_calls=$(grep -c '^+config get' "$REPAIR_LOG")
+scans=$(grep -c pass "$PASS_LOG")
+if (( config_calls == 2 )); then
+  ok "4 sessions refreshed the config cache once"
+else
+  fail "expected 2 config reads across 4 sessions, got $config_calls"
+fi
+if (( scans == 1 )); then
+  ok "4 sessions scanned the server's panes once"
+else
+  fail "expected 1 server-wide pane scan, got $scans"
+fi
+sleep 1
+
 printf '\n'
 if (( FAILURES == 0 )); then
   printf 'hook tests OK\n'

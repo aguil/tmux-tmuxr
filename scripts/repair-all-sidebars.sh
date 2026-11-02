@@ -14,9 +14,20 @@ if [[ -n "$SESSION_FILTER" ]]; then
   exit 0
 fi
 
-while IFS= read -r session_name; do
-  [[ -z "$session_name" ]] && continue
-  work_repair_session_sidebars "$session_name" 2>/dev/null || true
-done < <(
-  tmux list-sessions -F '#{session_name}' 2>/dev/null || true
-)
+repair_all_sessions() {
+  local session_name
+
+  work_refresh_sidebar_config_cache 2>/dev/null || true
+
+  while IFS= read -r session_name; do
+    [[ -z "$session_name" ]] && continue
+    work_session_tracked "$session_name" || continue
+    work_repair_session_windows "$session_name" 2>/dev/null || true
+  done < <(
+    tmux list-sessions -F '#{session_name}' 2>/dev/null || true
+  )
+
+  work_resize_all_sidebars 2>/dev/null || true
+}
+
+repair_all_sessions
