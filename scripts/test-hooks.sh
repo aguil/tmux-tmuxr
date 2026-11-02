@@ -413,6 +413,51 @@ else
   fail "the restored-pane check also suppressed an ordinary window"
 fi
 
+# --- 12. the post-restore hook does not hold resurrect up ----------------------
+# resurrect waits on this hook, so a slow repair must not delay its return.
+
+printf 'on-post-restore returns before repair finishes\n'
+start_server "" default
+REPAIR_WORK="$TMPROOT/repair-work"
+REPAIR_LOG="$TMPROOT/repair.log"
+cat >"$REPAIR_WORK" <<EOF
+#!/usr/bin/env bash
+[[ "\${1:-}" == "sidebar" ]] && exec sleep 600
+echo "+\$*" >>"$REPAIR_LOG"
+sleep "\${REPAIR_DELAY:-1}"
+echo "-" >>"$REPAIR_LOG"
+case "\$*" in
+  "config get sidebar-width") echo 40 ;;
+  "config get sidebar-position") echo right ;;
+esac
+EOF
+chmod +x "$REPAIR_WORK"
+tmux_test set-environment -g WORK_BIN "$REPAIR_WORK"
+tmux_test set-environment -g TMUXR_SIDEBAR_WIDTH 40
+tmux_test set-option -t t @work-workspace test
+tmux_test set-option -gq @work-restoring 1
+
+start_ms=$(date +%s%3N)
+bash "$SCRIPTS_DIR/on-post-restore.sh" >/dev/null 2>&1
+elapsed=$(($(date +%s%3N) - start_ms))
+if (( elapsed < 1000 )); then
+  ok "the hook returned in ${elapsed}ms against a 2s repair pass"
+else
+  fail "the hook blocked for ${elapsed}ms"
+fi
+if [[ -z "$(tmux_test show-option -gqv @work-restoring)" &&
+  -n "$(tmux_test show-option -gqv @work-restore-finished-at)" ]]; then
+  ok "restore flags are updated before the hook returns"
+else
+  fail "restore flags were not updated inline"
+fi
+sleep 3
+if [[ "$(sidebar_panes)" == "1" ]]; then
+  ok "the detached worker still repaired the sidebar"
+else
+  fail "expected 1 sidebar after detached repair, got $(sidebar_panes)"
+fi
+
 printf '\n'
 if (( FAILURES == 0 )); then
   printf 'hook tests OK\n'
