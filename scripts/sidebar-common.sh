@@ -181,20 +181,16 @@ work_resize_all_sidebars() {
   )
 }
 
-work_repair_session_sidebars() {
+# Repair one tracked session's panes. Reads the cached sidebar config and does
+# not resize, so a pass over every session can do both of those once.
+work_repair_session_windows() {
   local session="$1"
   local work_bin pane_id dead marked active_window
-
-  if ! work_session_tracked "$session"; then
-    return 0
-  fi
 
   work_bin=$(tmux show-environment -g WORK_BIN 2>/dev/null | cut -d= -f2- || true)
   if [[ -z "$work_bin" ]]; then
     return 0
   fi
-
-  work_refresh_sidebar_config_cache
 
   if ! work_sidebar_visible "$session"; then
     work_kill_session_sidebars "$session"
@@ -215,6 +211,17 @@ work_repair_session_sidebars() {
 
   active_window=$(tmux display-message -p -t "$session" '#{session_name}:#{window_index}' 2>/dev/null || true)
   work_ensure_sidebar_windows "$session" "$active_window"
+}
+
+work_repair_session_sidebars() {
+  local session="$1"
+
+  if ! work_session_tracked "$session"; then
+    return 0
+  fi
+
+  work_refresh_sidebar_config_cache
+  work_repair_session_windows "$session"
   work_resize_all_sidebars
 }
 

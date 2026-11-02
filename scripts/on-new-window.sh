@@ -71,6 +71,14 @@ if [[ "$SIDEBAR" == "1" ]]; then
   exit 0
 fi
 
+# Backstop for a restore the flag above missed: resurrect starts panes with
+# saved contents by running `cat <resurrect-dir>/restore/pane_contents/...`.
+# This only applies when @resurrect-capture-pane-contents is on.
+START_COMMAND=$(tmux display-message -p -t "$ACTIVE_PANE" '#{pane_start_command}' 2>/dev/null || echo "")
+if [[ "$START_COMMAND" == */restore/pane_contents/* ]]; then
+  exit 0
+fi
+
 REPO_COUNT=$($WORK_BIN repos --format names 2>/dev/null | grep -c . || true)
 if [[ "$REPO_COUNT" -eq 0 ]]; then
   tmux display-message -d 4000 "work: no repos in repo-scan-dir"

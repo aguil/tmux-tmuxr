@@ -13,7 +13,9 @@ SCRIPTS_DIR="$ROOT/scripts"
 # the suite from inside a session would otherwise let the dispatchers under test
 # -- which invoke bare `tmux` -- reach the developer's own server and resize
 # their real sidebars. Isolation has to start by dropping the inherited session.
-unset TMUX TMUX_PANE
+# Inside a session TMUXR_SCRIPTS_DIR also points at the installed plugin, and
+# scripts that honour it would run that copy instead of this checkout.
+unset TMUX TMUX_PANE TMUXR_SCRIPTS_DIR
 
 TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/tmuxr-test.XXXXXX")"
 export TMUX_TMPDIR="$TMPROOT"
@@ -345,6 +347,206 @@ if [[ "$(sidebar_panes)" == "1" && "$sidebar_height" == "$window_height" ]]; the
   ok "after the restore the sidebar spans all $window_height rows"
 else
   fail "expected one full-height sidebar, got $(sidebar_panes) of height '${sidebar_height}'/$window_height"
+fi
+
+# --- 10. resurrect hooks do not wait on Node ----------------------------------
+# tmux-continuum starts restoring one second after it loads, and resurrect reads
+# pre-restore-all once, so the hook must be registered before the plugin spends
+# time in `work` startup, simulated here by a binary that never answers.
+
+printf 'resurrect hooks are registered before work is resolved\n'
+start_server "" default
+SLOW_WORK="$TMPROOT/slow-work"
+cat >"$SLOW_WORK" <<'EOF'
+#!/usr/bin/env bash
+exec sleep 30
+EOF
+chmod +x "$SLOW_WORK"
+tmux_test set-option -gq @work-bin "$SLOW_WORK"
+bash "$ROOT/tmux-tmuxr.tmux" >/dev/null 2>&1 &
+plugin=$!
+sleep 1
+registered=$(tmux_test show-option -gqv @resurrect-hook-pre-restore-all)
+kill "$plugin" 2>/dev/null
+wait "$plugin" 2>/dev/null
+if [[ "$registered" == *@work-restoring* ]]; then
+  ok "pre-restore-all is set while work is still starting"
+else
+  fail "pre-restore-all was not registered before the first Node call"
+fi
+
+# --- 11. the repo picker skips panes resurrect is restoring -------------------
+
+printf 'on-new-window skips restored panes when the flag was missed\n'
+start_server "" default
+PICKER_LOG="$TMPROOT/picker.log"
+PICKER_WORK="$TMPROOT/picker-work"
+cat >"$PICKER_WORK" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >>"$PICKER_LOG"
+case "\$*" in
+  "config get prompt-repos-on-new-window") echo true ;;
+  "config get repo-scan-dir") echo /tmp ;;
+esac
+EOF
+chmod +x "$PICKER_WORK"
+tmux_test set-environment -g WORK_BIN "$PICKER_WORK"
+
+CONTENTS="$TMPROOT/resurrect/restore/pane_contents"
+mkdir -p "$CONTENTS"
+: >"$CONTENTS/pane-t:1.0"
+restored=$(tmux_test new-window -d -t t:1 -P -F '#{pane_id}' \
+  "cat '$CONTENTS//pane-t:1.0'; exec sleep 600")
+plain=$(tmux_test new-window -d -t t:2 -P -F '#{pane_id}' 'sleep 600')
+
+: >"$PICKER_LOG"
+bash "$SCRIPTS_DIR/on-new-window.sh" t t:1 "$restored" >/dev/null 2>&1
+if ! grep -q '^repos ' "$PICKER_LOG"; then
+  ok "a pane running resurrect's pane-contents command gets no picker"
+else
+  fail "repo picker path ran for a restored pane"
+fi
+
+: >"$PICKER_LOG"
+bash "$SCRIPTS_DIR/on-new-window.sh" t t:2 "$plain" >/dev/null 2>&1
+if grep -q '^repos ' "$PICKER_LOG"; then
+  ok "an ordinary new window still reaches the picker"
+else
+  fail "the restored-pane check also suppressed an ordinary window"
+fi
+
+# --- 12. the post-restore hook does not hold resurrect up ----------------------
+# resurrect waits on this hook, so a slow repair must not delay its return.
+
+printf 'on-post-restore returns before repair finishes\n'
+start_server "" default
+REPAIR_WORK="$TMPROOT/repair-work"
+REPAIR_LOG="$TMPROOT/repair.log"
+cat >"$REPAIR_WORK" <<EOF
+#!/usr/bin/env bash
+[[ "\${1:-}" == "sidebar" ]] && exec sleep 600
+echo "+\$*" >>"$REPAIR_LOG"
+sleep "\${REPAIR_DELAY:-1}"
+echo "-" >>"$REPAIR_LOG"
+case "\$*" in
+  "config get sidebar-width") echo 40 ;;
+  "config get sidebar-position") echo right ;;
+esac
+EOF
+chmod +x "$REPAIR_WORK"
+tmux_test set-environment -g WORK_BIN "$REPAIR_WORK"
+tmux_test set-environment -g TMUXR_SIDEBAR_WIDTH 40
+tmux_test set-option -t t @work-workspace test
+tmux_test set-option -gq @work-restoring 1
+
+start_ms=$(date +%s%3N)
+bash "$SCRIPTS_DIR/on-post-restore.sh" >/dev/null 2>&1
+elapsed=$(($(date +%s%3N) - start_ms))
+if (( elapsed < 1000 )); then
+  ok "the hook returned in ${elapsed}ms against a 2s repair pass"
+else
+  fail "the hook blocked for ${elapsed}ms"
+fi
+if [[ -z "$(tmux_test show-option -gqv @work-restoring)" &&
+  -n "$(tmux_test show-option -gqv @work-restore-finished-at)" ]]; then
+  ok "restore flags are updated before the hook returns"
+else
+  fail "restore flags were not updated inline"
+fi
+# Wait for the worker to exit, not a fixed time: it outlives this case otherwise
+# and writes its remaining calls into the next case's log.
+for _ in $(seq 1 150); do
+  pgrep -f "on-post-restore[.]sh --repair" >/dev/null 2>&1 || break
+  sleep 0.1
+done
+if [[ "$(sidebar_panes)" == "1" ]]; then
+  ok "the detached worker still repaired the sidebar"
+else
+  fail "expected 1 sidebar after detached repair, got $(sidebar_panes)"
+fi
+
+# --- 13. a repair pass does server-wide work once -----------------------------
+# Refreshing config spawns Node and resizing scans every pane, so per-session
+# repeats make a pass cost O(sessions x panes).
+
+printf 'repair-all-sidebars does per-pass work once\n'
+start_server "" default
+tmux_test set-environment -g WORK_BIN "$REPAIR_WORK"
+for s in a b c; do
+  tmux_test new-session -d -s "$s" 'sleep 600'
+  tmux_test set-option -t "$s" @work-workspace test
+done
+tmux_test set-option -t t @work-workspace test
+
+: >"$REPAIR_LOG"
+: >"$PASS_LOG"
+PATH="$SHIM_DIR:$PATH" REPAIR_DELAY=0 bash "$SCRIPTS_DIR/repair-all-sidebars.sh" >/dev/null 2>&1
+config_calls=$(grep -c '^+config get' "$REPAIR_LOG")
+scans=$(grep -c pass "$PASS_LOG")
+if (( config_calls == 2 )); then
+  ok "4 sessions refreshed the config cache once"
+else
+  fail "expected 2 config reads across 4 sessions, got $config_calls"
+fi
+if (( scans == 1 )); then
+  ok "4 sessions scanned the server's panes once"
+else
+  fail "expected 1 server-wide pane scan, got $scans"
+fi
+sleep 1
+
+# --- 14. overlapping repairs coalesce and never duplicate a sidebar ------------
+
+printf 'overlapping repair passes coalesce\n'
+start_server "" default
+tmux_test set-environment -g WORK_BIN "$REPAIR_WORK"
+tmux_test set-option -t t @work-workspace test
+
+: >"$REPAIR_LOG"
+REPAIR_DELAY=0.3 bash "$SCRIPTS_DIR/repair-all-sidebars.sh" >/dev/null 2>&1 &
+first=$!
+sleep 0.1
+for _ in 1 2 3; do
+  REPAIR_DELAY=0.3 bash "$SCRIPTS_DIR/repair-all-sidebars.sh" >/dev/null 2>&1
+done
+wait "$first"
+config_calls=$(grep -c '^+config get' "$REPAIR_LOG")
+if (( config_calls == 4 )); then
+  ok "3 callers during a pass produced exactly 1 follow-up pass"
+else
+  fail "expected 2 passes (4 config reads), got $config_calls config reads"
+fi
+if awk '/^\+/ { if (open) { exit 1 } open = 1; next } /^-/ { open = 0 }' "$REPAIR_LOG"; then
+  ok "repair passes never overlap"
+else
+  fail "overlapping repair passes"
+fi
+sleep 1
+
+printf 'ensure-sidebar is idempotent under concurrent callers\n'
+start_server "" default
+tmux_test set-environment -g WORK_BIN "$SIDEBAR_BIN"
+tmux_test set-environment -g TMUXR_SIDEBAR_WIDTH 40
+tmux_test set-environment -g TMUXR_SIDEBAR_POSITION right
+tmux_test set-option -t t @work-workspace test
+tmux_test resize-window -t t:0 -x 300 -y 50
+raced=0
+for w in 1 2 3 4 5 6; do
+  tmux_test new-window -d -t "t:$w" 'sleep 600'
+  tmux_test resize-window -t "t:$w" -x 300 -y 50
+  for _ in 1 2 3 4 5 6; do
+    bash "$SCRIPTS_DIR/ensure-sidebar.sh" "t:$w" >/dev/null 2>&1 &
+  done
+  wait
+  n=$(tmux_test list-panes -t "t:$w" -F '#{@work-sidebar}' | grep -c '^1$')
+  if [[ "$n" != "1" ]]; then
+    raced=$((raced + 1))
+  fi
+done
+if (( raced == 0 )); then
+  ok "6 racing callers left one sidebar in each of 6 windows"
+else
+  fail "$raced of 6 windows did not end with exactly one sidebar"
 fi
 
 printf '\n'

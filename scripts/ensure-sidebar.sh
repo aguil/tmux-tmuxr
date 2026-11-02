@@ -8,6 +8,8 @@ set -euo pipefail
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=sidebar-common.sh
 source "$SCRIPTS_DIR/sidebar-common.sh"
+# shellcheck source=coalesce-common.sh
+source "$SCRIPTS_DIR/coalesce-common.sh"
 
 WINDOW_TARGET="${1:-}"
 if [[ -z "$WINDOW_TARGET" ]]; then
@@ -36,6 +38,21 @@ fi
 
 if ! work_sidebar_visible "$SESSION_NAME"; then
   exit 0
+fi
+
+# Hold a per-window lock across the check and the marking below: a new pane has
+# no @work-sidebar until set-option runs, so a second caller in that gap would
+# add another sidebar. A caller that loses the lock leaves the work to the
+# holder. An untrusted runtime directory only costs this race protection.
+if RUNTIME_DIR="$(tmuxr_runtime_dir)"; then
+  WINDOW_KEY=$(tmux display-message -t "$WINDOW_TARGET" -p '#{pid}-#{window_id}' 2>/dev/null || echo "")
+  if [[ -n "$WINDOW_KEY" ]]; then
+    LOCK_DIR="$RUNTIME_DIR/tmuxr-sidebar-$WINDOW_KEY.lock"
+    if ! tmuxr_lock_acquire "$LOCK_DIR"; then
+      exit 0
+    fi
+    trap 'tmuxr_lock_release "$LOCK_DIR"' EXIT
+  fi
 fi
 
 LIVE_SIDEBARS=()

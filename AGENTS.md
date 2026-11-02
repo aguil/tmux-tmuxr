@@ -63,6 +63,9 @@ simple`). First bootstrap: tag `v0.1.0` on `main` after merge. See
 - High-frequency hooks (`pane-title-changed`, `client-resized`) must return
   immediately and hand work to one detached worker via `scripts/coalesce-common.sh`;
   never run `work` (Node) inline in a hook
+- tmux-resurrect runs its hooks synchronously inside `restore.sh`, so a
+  `@resurrect-hook-*` script must set flags and return; hand slow work to
+  `tmuxr_spawn_detached`
 - Lifecycle hooks use `set-hook -g` (replace on plugin reload, non-blocking)
 - Sidebar panes marked with `-sidebar 1`
 - Uppercase `W` / `S` bindings (lowercase `w` is tmux choose-tree)

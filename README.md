@@ -188,6 +188,10 @@ installed, this plugin registers hooks to:
 
 No extra configuration is required beyond having both plugins in your TPM list.
 
+On v0.2.4 and earlier, list `aguil/tmux-tmuxr` above
+`tmux-plugins/tmux-continuum`. Otherwise an automatic restore can start before
+tmuxr registers its hooks, and the repo picker opens for restored windows.
+
 ## Daemon
 
 On load the plugin starts `workd` if not already running. Logs and PID file:
