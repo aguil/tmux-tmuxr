@@ -488,6 +488,60 @@ else
 fi
 sleep 1
 
+# --- 14. overlapping repairs coalesce and never duplicate a sidebar ------------
+
+printf 'overlapping repair passes coalesce\n'
+start_server "" default
+tmux_test set-environment -g WORK_BIN "$REPAIR_WORK"
+tmux_test set-option -t t @work-workspace test
+
+: >"$REPAIR_LOG"
+REPAIR_DELAY=0.3 bash "$SCRIPTS_DIR/repair-all-sidebars.sh" >/dev/null 2>&1 &
+first=$!
+sleep 0.1
+for _ in 1 2 3; do
+  REPAIR_DELAY=0.3 bash "$SCRIPTS_DIR/repair-all-sidebars.sh" >/dev/null 2>&1
+done
+wait "$first"
+config_calls=$(grep -c '^+config get' "$REPAIR_LOG")
+if (( config_calls == 4 )); then
+  ok "3 callers during a pass produced exactly 1 follow-up pass"
+else
+  fail "expected 2 passes (4 config reads), got $config_calls config reads"
+fi
+if awk '/^\+/ { if (open) { exit 1 } open = 1; next } /^-/ { open = 0 }' "$REPAIR_LOG"; then
+  ok "repair passes never overlap"
+else
+  fail "overlapping repair passes"
+fi
+sleep 1
+
+printf 'ensure-sidebar is idempotent under concurrent callers\n'
+start_server "" default
+tmux_test set-environment -g WORK_BIN "$SIDEBAR_BIN"
+tmux_test set-environment -g TMUXR_SIDEBAR_WIDTH 40
+tmux_test set-environment -g TMUXR_SIDEBAR_POSITION right
+tmux_test set-option -t t @work-workspace test
+tmux_test resize-window -t t:0 -x 300 -y 50
+raced=0
+for w in 1 2 3 4 5 6; do
+  tmux_test new-window -d -t "t:$w" 'sleep 600'
+  tmux_test resize-window -t "t:$w" -x 300 -y 50
+  for _ in 1 2 3 4 5 6; do
+    bash "$SCRIPTS_DIR/ensure-sidebar.sh" "t:$w" >/dev/null 2>&1 &
+  done
+  wait
+  n=$(tmux_test list-panes -t "t:$w" -F '#{@work-sidebar}' | grep -c '^1$')
+  if [[ "$n" != "1" ]]; then
+    raced=$((raced + 1))
+  fi
+done
+if (( raced == 0 )); then
+  ok "6 racing callers left one sidebar in each of 6 windows"
+else
+  fail "$raced of 6 windows did not end with exactly one sidebar"
+fi
+
 printf '\n'
 if (( FAILURES == 0 )); then
   printf 'hook tests OK\n'
