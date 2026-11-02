@@ -9,6 +9,17 @@ Entries from the next release onward are updated by
 [release-please](https://github.com/googleapis/release-please) when the release
 PR merges. See [CONTRIBUTING.md](./CONTRIBUTING.md#releasing).
 
+## [0.2.5](https://github.com/aguil/tmux-tmuxr/compare/v0.2.4...v0.2.5) (2026-11-02)
+
+
+### Fixed
+
+* **restore:** register resurrect hooks before any Node call ([17151ba](https://github.com/aguil/tmux-tmuxr/commit/17151ba84d3a4c4338e840d6f3de4f62381b97af)), closes [#32](https://github.com/aguil/tmux-tmuxr/issues/32)
+* **restore:** return from the post-restore hook immediately ([8c50d3e](https://github.com/aguil/tmux-tmuxr/commit/8c50d3e419bc3a5be079fe005872f406e8861a23)), closes [#31](https://github.com/aguil/tmux-tmuxr/issues/31)
+* **restore:** stop restores blocking and opening the repo picker ([c82e917](https://github.com/aguil/tmux-tmuxr/commit/c82e91729f480397e2fed2594076c24bcc9370c4))
+* **sidebar:** do per-pass repair work once per pass ([52241e3](https://github.com/aguil/tmux-tmuxr/commit/52241e3ac5da8382ce35a8a3e61a3da4e6ac8681)), closes [#31](https://github.com/aguil/tmux-tmuxr/issues/31)
+* **sidebar:** serialise repair passes and sidebar creation ([b272886](https://github.com/aguil/tmux-tmuxr/commit/b272886eb093fdc69c1222c6a35a7d352dabefac)), closes [#31](https://github.com/aguil/tmux-tmuxr/issues/31)
+
 ## [0.2.4](https://github.com/aguil/tmux-tmuxr/compare/v0.2.3...v0.2.4) (2026-09-29)
 
 
