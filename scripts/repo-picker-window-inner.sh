@@ -37,7 +37,13 @@ if [[ -z "$selected" ]]; then
 fi
 
 path="${selected%%$'\t'*}"
-if $WORK_BIN window use-repo "$path" --session "$SESSION" --window "$WINDOW" --quiet; then
-  name=$(basename "$path")
+name=$(basename "$path")
+if err=$($WORK_BIN window use-repo "$path" --session "$SESSION" --window "$WINDOW" --quiet 2>&1 >/dev/null); then
   tmux display-message -d 3000 "work: $name → $path"
+else
+  # Without this, the error is lost: nothing shows where it was printed.
+  reason=$(printf '%s\n' "$err" | grep -m1 -iE '^error' || true)
+  reason=${reason:-$(printf '%s\n' "$err" | grep -m1 . || true)}
+  tmux display-message -d 8000 "work: could not set up $name: ${reason:-use-repo failed}"
+  exit 1
 fi
